@@ -11,7 +11,6 @@ import shutil
 import sys
 import numpy as np
 
-
 def save(list_or_dict,name):
     f = open(name, 'w')
     f.write(str(list_or_dict))
@@ -94,32 +93,6 @@ class Logger(object):
         # this handles the flush command by doing nothing.
         # you might want to specify some extra behavior here.
         pass
-
-# def write_list_to_file(strings, list_file):
-#     with open(list_file, 'w') as f:
-#         for s in strings:
-#             f.write('%s\n'%str(s))
-#     pass
-#
-# def read_list_from_file(list_file, comment='#', func=None):
-#     with open(list_file) as f:
-#         lines  = f.readlines()
-#
-#     strings=[]
-#     for line in lines:
-#         s = line.split(comment, 1)[0].strip()
-#         if s != '':
-#             strings.append(s)
-#     if func is not None:
-#         strings=[func(s) for s in strings]
-#
-#     return strings
-#
-# def backup_project_as_zip(project_dir, zip_file):
-#     assert(os.path.isdir(project_dir))
-#     assert(os.path.isdir(os.path.dirname(zip_file)))
-#     shutil.make_archive(zip_file.replace('.zip',''), 'zip', project_dir)
-#     pass
 
 def time_to_str(t, mode='min'):
     if mode=='min':

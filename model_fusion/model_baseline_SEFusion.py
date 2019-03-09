@@ -1,5 +1,6 @@
 import os
 from utils import *
+import torchvision.models as tvm
 from torchvision.models.resnet import BasicBlock
 import torch.nn as nn
 import torch
@@ -7,29 +8,8 @@ import torch.nn.functional as F
 import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
-
-from model.model_seresnext18 import Net
-
-class SEModule(nn.Module):
-
-    def __init__(self, channels, reduction=16):
-        super(SEModule, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
-                             padding=0)
-        self.relu = nn.ReLU(inplace=True)
-        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
-                             padding=0)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        module_input = x
-        x = self.avg_pool(x)
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        x = self.sigmoid(x)
-        return module_input * x
+from model.model_baseline import Net
+from model.backbone.senet import SEModule
 
 ###########################################################################################3
 class FusionNet(nn.Module):
@@ -52,16 +32,11 @@ class FusionNet(nn.Module):
         self.depth_moudle = Net(num_class=num_class,is_first_bn=True)
         self.ir_moudle = Net(num_class=num_class,is_first_bn=True)
 
+        self.color_SE = SEModule(128,reduction=16)
+        self.depth_SE = SEModule(128,reduction=16)
+        self.ir_SE = SEModule(128,reduction=16)
 
-        self.color_SE = SEModule(512)
-        self.depth_SE = SEModule(512)
-        self.ir_SE = SEModule(512)
-
-        self.bottleneck = nn.Sequential(nn.Conv2d(512*3, 128*3, kernel_size=1, padding=0),
-                                         nn.BatchNorm2d(128*3),
-                                         nn.ReLU(inplace=True))
-
-        self.res_0 = self._make_layer(BasicBlock, 128*3, 256, 2, stride=2)
+        self.res_0 = self._make_layer(BasicBlock, 384, 256, 2, stride=2)
         self.res_1 = self._make_layer(BasicBlock, 256, 512, 2, stride=2)
 
         self.fc = nn.Sequential(nn.Dropout(0.5),
@@ -102,7 +77,6 @@ class FusionNet(nn.Module):
         ir_feas = self.ir_SE(ir_feas)
 
         fea = torch.cat([color_feas, depth_feas, ir_feas], dim=1)
-        fea = self.bottleneck(fea)
 
         x = self.res_0(fea)
         x = self.res_1(x)
@@ -125,29 +99,12 @@ class FusionNet(nn.Module):
 
 ### run ##############################################################################
 def run_check_net():
-    batch_size = 32
-    C,H,W = 3, 128, 128
     num_class = 2
-    input = np.random.uniform(0,1, (batch_size,C,H,W)).astype(np.float32)
-    truth = np.random.choice (num_class,   batch_size).astype(np.float32)
-
-    #------------
-    input = torch.from_numpy(input).float().cuda()
-    truth = torch.from_numpy(truth).long().cuda()
-
-    input = to_var(input)
-    truth = to_var(truth)
-    #---
-    criterion = softmax_cross_entropy_criterion
-    net = Net(num_class).cuda()
-    net.set_mode('backup')
+    net = Net(num_class)
     print(net)
-    logit = net.forward(input)
 
 ########################################################################################
 if __name__ == '__main__':
     import os
-    os.environ['CUDA_VISIBLE_DEVICES'] = '4,5,6,7'
-    print( '%s: calling main function ... ' % os.path.basename(__file__))
     run_check_net()
     print( 'sucessful!')

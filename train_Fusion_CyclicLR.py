@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] =  '7'
+os.environ['CUDA_VISIBLE_DEVICES'] =  '2'
 import sys
 sys.path.append("..")
 import argparse
@@ -9,16 +9,19 @@ from metric import *
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
 
 def get_model(model_name, num_class):
-    if model_name == 'resnet18':
-        from model_fusion.model_resnet18_SEFusion import FusionNet
-    elif model_name == 'seresnext18':
-        from model_fusion.model_seresnext18_SEFusion import FusionNet
+    if model_name == 'baseline':
+        from model_fusion.model_baseline_SEFusion import FusionNet
+    elif model_name == 'model_A':
+        from model_fusion.model_A_SEFusion import FusionNet
+    elif model_name == 'model_B':
+        from model_fusion.model_B_SEFusion import FusionNet
 
     net = FusionNet(num_class=num_class)
     return net
 
 def run_train(config):
     out_dir = './models'
+    config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
     out_dir = os.path.join(out_dir,config.model_name)
     initial_checkpoint = config.pretrained_model
     criterion          = softmax_cross_entropy_criterion
@@ -53,7 +56,7 @@ def run_train(config):
                               fold_index=config.train_fold_index)
     valid_loader  = DataLoader( valid_dataset,
                                 shuffle=False,
-                                batch_size  = config.batch_size,
+                                batch_size  = config.batch_size // 36,
                                 drop_last   = False,
                                 num_workers = 8)
 
@@ -84,8 +87,8 @@ def run_train(config):
 
     ## start training here! ##############################################
     log.write('** start training here! **\n')
-    log.write('                    |------------ VALID -------------|-------- TRAIN/BATCH ----------|         \n')
-    log.write('rate   iter  epoch  | loss   acc-1  acc-3   lb       | loss   acc-1  acc-3   lb      |  time   \n')
+    log.write('                                  |------------ VALID -------------|-------- TRAIN/BATCH ----------|         \n')
+    log.write('model_name   lr   iter  epoch     |     loss      acer      acc    |     loss              acc     |  time   \n')
     log.write('----------------------------------------------------------------------------------------------------\n')
 
     train_loss   = np.zeros(6,np.float32)
@@ -166,71 +169,18 @@ def run_train(config):
                     log.write('save global min acer model: ' + str(min_acer) + '\n')
 
             asterisk = ' '
-            log.write(config.model_name+' Cycle %d: %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f  (%0.3f)%s  | %0.6f  %0.6f  %0.3f  (%0.3f) |%s \n' % (
+            log.write(config.model_name+' Cycle %d: %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f %s  | %0.6f  %0.6f |%s \n' % (
                 cycle_index, lr, iter, epoch,
-                valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3],asterisk,
-                batch_loss[0], 0.0, 0.0, batch_loss[1],
+                valid_loss[0], valid_loss[1], valid_loss[2], asterisk,
+                batch_loss[0], batch_loss[1],
                 time_to_str((timer() - start), 'min')))
 
         ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
         torch.save(net.state_dict(), ckpt_name)
         log.write('save cycle ' + str(cycle_index) + ' final model \n')
 
-
-def run_valid_10crop(config, dir):
-    out_dir = './models'
-    out_dir = os.path.join(out_dir,config.model_name)
-    initial_checkpoint = config.pretrained_model
-
-    ## net ---------------------------------------
-    net = get_model(model_name=config.model, num_class=2)
-    net = torch.nn.DataParallel(net)
-    net =  net.cuda()
-
-    if initial_checkpoint is not None:
-        save_dir = os.path.join(out_dir + '/checkpoint', dir, initial_checkpoint)
-        initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
-        print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
-        net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
-        if not os.path.exists(os.path.join(out_dir + '/checkpoint', dir)):
-            os.makedirs(os.path.join(out_dir + '/checkpoint', dir))
-
-
-    valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
-                              fold_index=config.train_fold_index)
-    valid_loader  = DataLoader( valid_dataset,
-                                shuffle=False,
-                                batch_size  = config.batch_size,
-                                drop_last   = False,
-                                num_workers=8)
-
-    criterion = softmax_cross_entropy_criterion
-    net.eval()
-    valid_loss,out = do_valid_test(net, valid_loader, criterion)
-    net.train()
-    print('%0.6f  %0.6f  %0.3f  (%0.3f) \n' % (valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3]))
-
-    tpr, fpr, acc = calculate_accuracy(0.5, out[0], out[1])
-    acer, tp, fp, tn, fn = ACER(0.5, out[0], out[1])
-
-    print('ensemble')
-    print(acer)
-    print(acc)
-    print('tp: '+str(tp))
-    print('tn: '+str(tn))
-    print('fp: '+str(fp))
-    print('fn: '+str(fn))
-
-    submission(out[0],save_dir+'_noTTA.txt', mode='valid')
-
-    try:
-        TPR_FPR(out[0], out[1], fpr_target = 0.01)
-        TPR_FPR(out[0], out[1], fpr_target = 0.001)
-        TPR_FPR(out[0], out[1], fpr_target = 0.0001)
-    except:
-        return
-
-def run_test_10crop(config, dir):
+def run_test(config, dir):
+    config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
     out_dir = './models'
     out_dir = os.path.join(out_dir,config.model_name)
     initial_checkpoint = config.pretrained_model
@@ -277,64 +227,30 @@ def run_test_10crop(config, dir):
     submission(out,save_dir+'_noTTA.txt', mode='test')
 
 def main(config):
-
     if config.mode == 'train':
         run_train(config)
 
-    if config.mode == 'test':
-        run_train(config)
-
-    if config.mode == 'valid_10crop':
-        run_valid_10crop(config)
-
-    if config.mode == 'inferAllcycle_val':
-        for i in range(config.cycle_num):
-            config.pretrained_model = r'Cycle_'+str(i)+'_final_model.pth'
-            run_valid_10crop(config, dir = 'final')
-
-        for i in range(config.cycle_num):
-            config.pretrained_model = r'Cycle_'+str(i)+'_min_acer_model.pth'
-            run_valid_10crop(config, dir = 'min')
-
+    if config.mode == 'infer_test':
         config.pretrained_model = r'global_min_acer_model.pth'
-        run_valid_10crop(config, dir='global')
-
-    if config.mode == 'inferAllcycle_test':
-        for i in range(config.cycle_num):
-            config.pretrained_model = r'Cycle_'+str(i)+'_final_model.pth'
-            run_test_10crop(config, dir = 'final_test')
-
-        for i in range(config.cycle_num):
-            config.pretrained_model = r'Cycle_'+str(i)+'_min_acer_model.pth'
-            run_test_10crop(config, dir = 'min_test')
-
-        config.pretrained_model = r'global_min_acer_model.pth'
-        run_test_10crop(config, dir='global_test')
+        run_test(config, dir='global_test_36_TTA')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_fold_index', type=int, default = -1)
-    parser.add_argument('--model', type=str, default='resnet18')
-
-    parser.add_argument('--image_mode', type=str, default='fusion')
-    parser.add_argument('--model_name', type=str, default='tmp')
-
+    parser.add_argument('--model', type=str, default='model_A')
     parser.add_argument('--image_size', type=int, default=32)
-    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--image_mode', type=str, default='fusion')
+
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--cycle_num', type=int, default=10)
     parser.add_argument('--cycle_inter', type=int, default=50)
 
     parser.add_argument('--mode', type=str, default='train', choices=['train','test','valid_10crop'])
     parser.add_argument('--pretrained_model', type=str, default=None)
 
-    # parser.add_argument('--mode', type=str, default='inferAllcycle_test', choices=['train','test','valid_10crop'])
+    # parser.add_argument('--mode', type=str, default='infer_test', choices=['train','test','valid_10crop'])
     # parser.add_argument('--pretrained_model', type=str, default=None)#
-
-    parser.add_argument('--iter_save_interval', type=int, default= 1000 * 2)
-    parser.add_argument('--iter_valid', type=int, default=100)
-    parser.add_argument('--num_iters', type=int, default=200 * 1000 *2)
-    parser.add_argument('--step', type=int, default=50 * 1000)
 
     config = parser.parse_args()
     print(config)

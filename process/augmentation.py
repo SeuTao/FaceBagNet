@@ -3,8 +3,6 @@ import math
 import cv2
 from data_helper import *
 
-RESIZE_SIZE = 112
-
 def random_cropping(image, target_shape=(32, 32, 3), is_random = True):
     image = cv2.resize(image,(RESIZE_SIZE,RESIZE_SIZE))
     target_h, target_w,_ = target_shape
@@ -20,7 +18,7 @@ def random_cropping(image, target_shape=(32, 32, 3), is_random = True):
     zeros = image[start_y:start_y+target_h,start_x:start_x+target_w,:]
     return zeros
 
-def TTA_cropps(image, target_shape=(32, 32, 3)):
+def TTA_18_cropps(image, target_shape=(32, 32, 3)):
     image = cv2.resize(image, (RESIZE_SIZE, RESIZE_SIZE))
 
     width, height, d = image.shape
@@ -30,6 +28,7 @@ def TTA_cropps(image, target_shape=(32, 32, 3)):
     start_y = ( height - target_h) // 2
 
     starts = [[start_x, start_y],
+
               [start_x - target_w, start_y],
               [start_x, start_y - target_w],
               [start_x + target_w, start_y],
@@ -65,6 +64,64 @@ def TTA_cropps(image, target_shape=(32, 32, 3)):
 
         images.append(image_.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
         images.append(image_flip.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
+
+    return images
+
+def TTA_36_cropps(image, target_shape=(32, 32, 3)):
+    image = cv2.resize(image, (RESIZE_SIZE, RESIZE_SIZE))
+
+    width, height, d = image.shape
+    target_w, target_h, d = target_shape
+
+    start_x = ( width - target_w) // 2
+    start_y = ( height - target_h) // 2
+
+    starts = [[start_x, start_y],
+
+              [start_x - target_w, start_y],
+              [start_x, start_y - target_w],
+              [start_x + target_w, start_y],
+              [start_x, start_y + target_w],
+
+              [start_x + target_w, start_y + target_w],
+              [start_x - target_w, start_y - target_w],
+              [start_x - target_w, start_y + target_w],
+              [start_x + target_w, start_y - target_w],
+              ]
+
+    images = []
+
+    for start_index in starts:
+        image_ = image.copy()
+        x, y = start_index
+
+        if x < 0:
+            x = 0
+        if y < 0:
+            y = 0
+
+        if x + target_w >= RESIZE_SIZE:
+            x = RESIZE_SIZE - target_w-1
+        if y + target_h >= RESIZE_SIZE:
+            y = RESIZE_SIZE - target_h-1
+
+        zeros = image_[x:x + target_w, y: y+target_h, :]
+
+        image_ = zeros.copy()
+
+        zeros = np.fliplr(zeros)
+        image_flip_lr = zeros.copy()
+
+        zeros = np.flipud(zeros)
+        image_flip_lr_up = zeros.copy()
+
+        zeros = np.fliplr(zeros)
+        image_flip_up = zeros.copy()
+
+        images.append(image_.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
+        images.append(image_flip_lr.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
+        images.append(image_flip_up.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
+        images.append(image_flip_lr_up.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
 
     return images
 
@@ -120,7 +177,7 @@ def color_augumentor(image, target_shape=(32, 32, 3), is_infer=False):
         ])
 
         image =  augment_img.augment_image(image)
-        image = TTA_cropps(image, target_shape)
+        image = TTA_36_cropps(image, target_shape)
         return image
 
     else:
@@ -142,7 +199,7 @@ def depth_augumentor(image, target_shape=(32, 32, 3), is_infer=False):
         ])
 
         image =  augment_img.augment_image(image)
-        image = TTA_cropps(image, target_shape)
+        image = TTA_36_cropps(image, target_shape)
         return image
 
     else:
@@ -163,7 +220,7 @@ def ir_augumentor(image, target_shape=(32, 32, 3), is_infer=False):
             iaa.Fliplr(0),
         ])
         image =  augment_img.augment_image(image)
-        image = TTA_cropps(image, target_shape)
+        image = TTA_36_cropps(image, target_shape)
         return image
 
     else:
@@ -178,20 +235,3 @@ def ir_augumentor(image, target_shape=(32, 32, 3), is_infer=False):
         image = random_cropping(image, target_shape, is_random=True)
         return image
 
-def try_imgs():
-    dir = r'./tmp'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-    path = r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/0104_out/fp/000133-color.jpg'
-    img = cv2.imread(path,1)
-    img = cv2.resize(img,(112,112))
-
-    for i in range(20):
-        img_ = random_cropping(img, target_shape=(48, 48, 3), is_random = False)
-        cv2.imwrite(os.path.join(dir,str(i)+'.jpg'),img_)
-
-    return
-
-if __name__ == '__main__':
-    try_imgs()

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
-from model.model_resnet18 import Net
+from model.model_baseline import Net
 
 ###########################################################################################3
 class FusionNet(nn.Module):

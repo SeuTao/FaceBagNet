@@ -38,11 +38,7 @@ class FDDataset(Dataset):
             print('set dataset mode: val')
 
         elif self.mode == 'train':
-            if self.fold_index == -1:
-                self.train_list, self.val_list = load_fold_list(0,all=True)
-            else:
-                self.train_list, self.val_list = load_fold_list(self.fold_index)
-
+            self.train_list = load_train_list()
             random.shuffle(self.train_list)
             self.num_data = len(self.train_list)
             print('set dataset mode: train')
@@ -102,7 +98,6 @@ class FDDataset(Dataset):
 
             if random.randint(0, 1) == 0:
                 random_pos = random.randint(0, 2)
-
                 if random.randint(0, 1) == 0:
                     image[:, :, 3 * random_pos:3 * (random_pos + 1)] = 0
                 else:
@@ -169,7 +164,7 @@ class FDDataset(Dataset):
 
 # check #################################################################
 def run_check_train_data():
-    dataset = FDDataset(mode = 'train', fold_index=0)
+    dataset = FDDataset(mode = 'train')
     print(dataset)
 
     num = len(dataset)

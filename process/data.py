@@ -3,9 +3,8 @@ import cv2
 from data_helper import *
 
 class FDDataset(Dataset):
-    def __init__(self, mode, modality='color', fold_index='<NIL>', image_size=128, augment = None, augmentor = None, balance = True):
+    def __init__(self, mode, modality='color', fold_index=-1, image_size=128, augment = None, augmentor = None, balance = True):
         super(FDDataset, self).__init__()
-
         print('fold: '+str(fold_index))
         print(modality)
 
@@ -40,11 +39,7 @@ class FDDataset(Dataset):
             print('set dataset mode: test')
 
         elif self.mode == 'train':
-
-            if self.fold_index == -1:
-                self.train_list, self.val_list = load_fold_list(0,all=True)
-            else:
-                self.train_list, self.val_list = load_fold_list(self.fold_index)
+            self.train_list = load_train_list()
 
             random.shuffle(self.train_list)
             self.num_data = len(self.train_list)
@@ -52,9 +47,6 @@ class FDDataset(Dataset):
             if self.balance:
                 self.train_list = transform_balance(self.train_list)
             print('set dataset mode: train')
-
-            self.num_data = len(self.val_list)
-            print('set dataset mode: val')
 
         print(self.num_data)
 
@@ -70,6 +62,7 @@ class FDDataset(Dataset):
                     tmp_list = self.train_list[0]
                 else:
                     tmp_list = self.train_list[1]
+
                 pos = random.randint(0,len(tmp_list)-1)
                 color, depth, ir, label = tmp_list[pos]
             else:

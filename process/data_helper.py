@@ -5,6 +5,9 @@ from utils import *
 TRN_IMGS_DIR = '/data1/shentao/DATA/CVPR19_FaceAntiSpoofing/Training/'
 TST_IMGS_DIR = '/data1/shentao/DATA/CVPR19_FaceAntiSpoofing/Val/'
 LIST_DIR = r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/image_list'
+DATA_ROOT = r'/data1/shentao/DATA/CVPR19_FaceAntiSpoofing'
+
+RESIZE_SIZE = 112
 
 def load_train_val_list(ID_dict, fold_index):
     train_fold_list = []
@@ -30,30 +33,9 @@ def load_train_val_list(ID_dict, fold_index):
     save(train_fold_list,os.path.join(LIST_DIR,'train_fold'+str(fold_index)+'.txt'))
     save(val_fold_list,os.path.join(LIST_DIR,'val_fold'+str(fold_index)+'.txt'))
 
-def create_5fold_IDS():
-    ID_list = os.listdir(os.path.join(TRN_IMGS_DIR, 'real_part'))
-    random.shuffle(ID_list)
-
-    for i in range(5):
-        val_part = ID_list[i*60:(i+1)*60]
-
-        val_part_dict = {}
-        for tmp in val_part:
-            val_part_dict[tmp] = 1
-
-        print(val_part_dict)
-        print(len(val_part_dict))
-        load_train_val_list(val_part_dict, i)
-
-    print('done')
-
 def load_fold_list(fold_index=0, all = False):
-
     train_fold_list = load(os.path.join(LIST_DIR,'train_fold'+str(fold_index)+'.txt'))
     val_fold_list = load(os.path.join(LIST_DIR,'val_fold'+str(fold_index)+'.txt'))
-
-    # train_fold_list = add_id_label(train_fold_list)
-    # val_fold_list = add_id_label(val_fold_list)
 
     if all:
         train_fold_list =  train_fold_list + val_fold_list
@@ -62,7 +44,6 @@ def load_fold_list(fold_index=0, all = False):
 
 def load_val_list():
     list = []
-
     f = open('/data1/shentao/DATA/CVPR19_FaceAntiSpoofing/val_private_list.txt')
     lines = f.readlines()
 
@@ -73,18 +54,15 @@ def load_val_list():
 
 def load_test_list():
     list = []
-
     f = open('/data1/shentao/DATA/CVPR19_FaceAntiSpoofing/test_public_list.txt')
     lines = f.readlines()
 
     for line in lines:
         line = line.strip().split(' ')
         list.append(line)
-
     return list
 
 def load_test_label(dir):
-
     print(dir)
     pos_list = os.listdir(dir)
     pos_dict = {}
@@ -92,17 +70,14 @@ def load_test_label(dir):
         pos_dict[tmp] = 1
 
     print('load from: ' + dir +' test_pos_num:'+str(len(pos_dict)))
-
     return pos_dict
 
 def transform_balance(train_list):
-
     print('balance!!!!!!!!')
 
     pos_list = []
     neg_list = []
     for tmp in train_list:
-
         if tmp[3]=='1':
             pos_list.append(tmp)
         else:
@@ -110,11 +85,9 @@ def transform_balance(train_list):
 
     print(len(pos_list))
     print(len(neg_list))
-
     return [pos_list,neg_list]
 
 def submission(probs, outname, mode='valid'):
-
     if mode == 'valid':
         f = open('/data1/shentao/DATA/CVPR19_FaceAntiSpoofing/val_public_list.txt')
     else:
@@ -125,13 +98,10 @@ def submission(probs, outname, mode='valid'):
     lines = [tmp.strip() for tmp in lines]
 
     f = open(outname,'w')
-
     for line,prob in zip(lines, probs):
         out = line + ' ' + str(prob)
         f.write(out+'\n')
-
     f.close()
-
     return list
 
 def train_IDs():
@@ -149,30 +119,6 @@ def train_IDs():
 
     save(id_dict, os.path.join(LIST_DIR,'ID_dict.txt'))
 
-# def add_id_label(list):
-#     id_dict = load(os.path.join(LIST_DIR, 'ID_dict.txt'))
-#
-#     new_list = []
-#     for tmp in list:
-#         name_tmp = tmp[0].split('/')[2]
-#         tmp.append(id_dict[name_tmp])
-#         new_list.append(tmp)
-#
-#     return new_list
-
-
 if __name__ == '__main__':
-    # create_5fold_IDS()
-    # load_train_val_list()
-    # load_fold_list(fold_index=0)
     load_test_list()
-    # submission(None,'tmp.txt')
 
-    # train_IDs()
-    # train_list ,_ = load_fold_list()
-    # add_id_label(train_list)
-    # tmp,_ = load_fold_list()
-    # print(tmp[0])
-#
-    # id_list = load( os.path.join(LIST_DIR,'ID_list.txt'))
-    # print(id_list)

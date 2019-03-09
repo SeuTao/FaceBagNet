@@ -135,7 +135,6 @@ def ensemble_test_dir(sub_dir_list, save_name):
     probs = np.asarray(probs)
     submission(probs,save_name, mode='test')
 
-
 def compare(sub=r'r18_val.txt'):
     sub_dict = load_sub(sub)
     print(len(sub_dict))
@@ -259,30 +258,49 @@ def extract(sub, dir):
 
     return
 
+def extract_imgs(sub, dir):
+
+    thres = 0.95
+    thres_up = 0.98
+
+    print(thres)
+    print(thres_up)
+
+    sub_dict = load_sub(sub)
+    test_list = load_test_list()
+
+    # fn
+    fp_list = []
+
+    for c,d,i in test_list:
+        prob_tmp = sub_dict[c]
+
+        if prob_tmp >= thres and prob_tmp < thres_up:
+            fp_list.append([c,d,i])
+
+    print(len(fp_list))
+
+    import shutil
+    save_dir = dir
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+    print(dir)
+
+    for c,d,i in fp_list:
+        c = os.path.join(DATA_ROOT, c)
+        d = os.path.join(DATA_ROOT, d)
+        i = os.path.join(DATA_ROOT, i)
+
+        c_new = os.path.join(save_dir,os.path.split(c)[1])
+        d_new = os.path.join(save_dir,os.path.split(d)[1])
+        i_new = os.path.join(save_dir,os.path.split(i)[1])
+
+        shutil.copyfile(c, c_new)
+        shutil.copyfile(d, d_new)
+        shutil.copyfile(i, i_new)
+
 def compare_hand_label():
-
-    # # dir_fn = r'./0105_out/fn'
-    # dir_fn_n = r'./0105_out/fn'
-    #
-    # def get_color_dict(dir):
-    #     list = os.listdir(dir)
-    #
-    #     dict={}
-    #     for tmp in list:
-    #         if 'color' in tmp:
-    #             dict[tmp] = 1
-    #
-    #     return dict
-    #
-    # # dict_fn = get_color_dict(dir_fn)
-    # dict_fn_n = get_color_dict(dir_fn_n)
-
-    # dict_fn_p = {}
-    # for item in dict_fn:
-    #     if item not in dict_fn_p:
-    #         dict_fn_p[item] = 1
-
-    # print(len(dict_fn))
 
     dir_fn_n = r'./0110_out_0/fn_n'
     dir_fp_p = r'./0110_out_0/fp_p'
@@ -299,12 +317,6 @@ def compare_hand_label():
 
     dict_fn_n = get_color_dict(dir_fn_n)
     dict_fp_p = get_color_dict(dir_fp_p)
-
-    # dict_fp_p = {}
-    #
-    # for item in dict_fp:
-    #     if item not in dict_fp_n:
-    #         dict_fp_p[item] = 1
 
     # to be removed
     print(len(dict_fn_n))
@@ -391,8 +403,6 @@ def nrom_thres_(sub = r'r18_val.txt', thres = 0.5):
     f.close()
 
     f = open('tmp.txt','w')
-
-
     for line, line2 in zip(lines,lines_):
         line_ = line.strip()
         line_ = line_.split(' ')
@@ -412,25 +422,7 @@ def nrom_thres_(sub = r'r18_val.txt', thres = 0.5):
     f.close()
     return
 
-
-if __name__ == '__main__':
-    # sub_list0 = [r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_t1/checkpoint/final_model.pth0.0036.txt',
-    #             r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_t2/checkpoint/final_model.pth0.0028.txt',
-    #             r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_t3/checkpoint/final_model.pth0.0040.txt',
-    #             r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_t4/checkpoint/final_model.pth0.0038.txt']
-    #
-    # sub_list1 = [r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_add_flipUD_t1/checkpoint/final_model.pth0.0026.txt']
-    #             # r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_add_flipUD_t2/checkpoint/final_model.pth0.0033.txt',
-    #             # r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_add_flipUD_t3/checkpoint/final_model.pth0.0025.txt',
-    #             # r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_fold-1_fusion_RC0.6_add_flipUD_t4/checkpoint/final_model.pth0.0025.txt']
-
-    # compare(sub=sub_list[0])
-    # compare(sub=sub_list[1])
-    # compare(sub=sub_list[2])
-    # compare(sub=sub_list[3])
-
-    # ensemble(sub_list0, 'tmp.txt')
-
+def sub_former():
     sub_ir = [r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_0_min_acer_model.pth0.0299_noTTA.txt',
                  r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_1_min_acer_model.pth0.1650_noTTA.txt',
                  r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_2_min_acer_model.pth0.0231_noTTA.txt',
@@ -482,26 +474,8 @@ if __name__ == '__main__':
         r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_9_min_acer_model.pth_noTTA.txt',
         ]
 
-    # sub_fusion = [
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_0_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_1_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_2_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_3_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_4_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_5_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_6_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_7_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_8_min_acer_model.pth_noTTA.txt',
-    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_9_min_acer_model.pth_noTTA.txt',
-    #     ]
-
-    # sub_fusion = [r'color_final.txt','depth_final.txt','ir_final.txt']
-    sub_fusion = [r'color_min.txt','depth_min.txt','ir_min.txt']
-
-    # sub_fusion = ['depth_min.txt']
-    # ensemble(sub_fusion, 'tmp.txt')
-
-    dir = r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
+def sub_first():
+    dir = r'./models/'
     dir_list = [
                 dir + r'r18_fusion_NewCrop_pretrain_112to32_SnapshotEnsemble_NewVal/checkpoint/global',
                 dir + r'r18_fusion_NewCrop_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global',
@@ -515,33 +489,17 @@ if __name__ == '__main__':
     ensemble_valid_dir(dir_list, 'valid_first.txt')
 
     dir_list = [
-
                 dir + r'r18_fusion_NewCrop_pretrain_112to32_SnapshotEnsemble_NewVal/checkpoint/global_test',
                 dir + r'r18_fusion_NewCrop_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
                 dir + r'r18_fusion_NewCrop_pretrain_112to64_SnapshotEnsemble_NewVal/checkpoint/global_test',
                 dir + r'seresnext18_NewCrop_color_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
                 dir + r'seresnext18_NewCrop_depth_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
                 dir + r'seresnext18_NewCrop_ir_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test'
-
                 ]
 
     ensemble_test_dir(dir_list, 'test_first.txt')
 
-    # ensemble(sub_color, 'ColorSnapshotEnsemble_10cycle50epoch.txt')
-    # ensemble(sub_depth, 'DepthSnapshotEnsemble_10cycle50epoch.txt')
-    # ensemble(sub_ir, 'IrSnapshotEnsemble_10cycle50epoch.txt')
 
-    # sub_fusion = [r'ColorSnapshotEnsemble_10cycle50epoch.txt', 'DepthSnapshotEnsemble_10cycle50epoch.txt', 'IrSnapshotEnsemble_10cycle50epoch.txt']
-    # ensemble( sub_fusion, 'tmp.txt')
+if __name__ == '__main__':
+    sub_first()
 
-    # nrom_thres_()
-    # compare(sub=r'r18_val_thres_change.txt')
-    # compare(sub=r'r18_val.txt')
-    # compare(sub=r'r18_fusion_add_flipUD_9cropTTA_ImagenetPretrain_t1.txt')
-    # compare(sub=r'3ModalitySnapshotEnsemble_10cycle50epoch.txt')
-    # compare(sub=r'tmp.txt')
-    # extract(sub=r'r18_fusion_4tAve_9cropTTA_ImagenetPretrain.txt',dir='./0110_out_0')
-    # compare_hand_label()
-    # find_thres(pos_num=2987+81)
-    # find_thres(sub=r'r18_flipTTA.txt', pos_num = 2994+909 )
-    # nrom_thres()

@@ -33,7 +33,6 @@ class SEModule(nn.Module):
         x = self.sigmoid(x)
         return module_input * x
 
-
 ###########################################################################################3
 class FusionNet(nn.Module):
     def load_pretrain(self, pretrain_file):
@@ -52,25 +51,8 @@ class FusionNet(nn.Module):
         super(FusionNet,self).__init__()
 
         self.color_moudle  = Net(num_class=num_class,is_first_bn=True)
-
         self.depth_moudle = Net(num_class=num_class,is_first_bn=True)
-
         self.ir_moudle = Net(num_class=num_class,is_first_bn=True)
-
-        # self.color_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_color_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.depth_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_depth_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.ir_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_ir_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-
-        # for param in self.color_moudle.parameters():
-        #     param.detach_()
-        # for param in self.depth_moudle.parameters():
-        #     param.detach_()
-        # for param in self.ir_moudle.parameters():
-        #     param.detach_()
-
 
         self.color_SE = SEModule(128)
         self.depth_SE = SEModule(128)
@@ -88,9 +70,9 @@ class FusionNet(nn.Module):
         downsample = None
         if stride != 1 :
             downsample = nn.Sequential(
-                nn.Conv2d(inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion),)
+                                        nn.Conv2d(inplanes, planes * block.expansion,
+                                                  kernel_size=1, stride=stride, bias=False),
+                                        nn.BatchNorm2d(planes * block.expansion),)
 
         layers = []
         layers.append(block(inplanes, planes, stride, downsample))
@@ -105,11 +87,8 @@ class FusionNet(nn.Module):
         batch_size,C,H,W = x.shape
 
         color = x[:, 0:3,:,:]
-        # color = torch.cat([color,color,color],1)
         depth = x[:, 3:6,:,:]
-        # depth = torch.cat([depth,depth,depth],1)
         ir = x[:, 6:9,:,:]
-        # ir = torch.cat([ir,ir,ir],1)
 
         color_feas = self.color_moudle.forward_res3(color)
         depth_feas = self.depth_moudle.forward_res3(depth)
@@ -146,26 +125,8 @@ def run_check_net():
     C,H,W = 3, 128, 128
     num_class = 2
 
-    input = np.random.uniform(0,1, (batch_size,C,H,W)).astype(np.float32)
-    truth = np.random.choice (num_class,   batch_size).astype(np.float32)
-
-    #------------
-    input = torch.from_numpy(input).float().cuda()
-    truth = torch.from_numpy(truth).long().cuda()
-
-    input = to_var(input)
-    truth = to_var(truth)
-
-    #---
-    criterion = softmax_cross_entropy_criterion
     net = Net(num_class).cuda()
-    net.set_mode('backup')
     print(net)
-    ## exit(0)
-    # net.load_pretrain('/media/st/SSD02/Projects/Kaggle_draw/models/resnet34-fold0/checkpoint/00006000_model.pth')
-
-    logit = net.forward(input)
-    loss  = criterion(logit, truth)
 
 ########################################################################################
 if __name__ == '__main__':

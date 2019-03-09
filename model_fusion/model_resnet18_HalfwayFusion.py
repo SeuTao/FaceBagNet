@@ -1,7 +1,5 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '4'
 from utils import *
-import torchvision.models as tvm
 from torchvision.models.resnet import BasicBlock
 import torch.nn as nn
 import torch
@@ -9,9 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
-
 from model.model_resnet18 import Net
-
 
 ###########################################################################################3
 class FusionNet(nn.Module):
@@ -65,19 +61,13 @@ class FusionNet(nn.Module):
         batch_size,C,H,W = x.shape
 
         color = x[:, 0:3,:,:]
-        # color = torch.cat([color,color,color],1)
         depth = x[:, 3:6,:,:]
-        # depth = torch.cat([depth,depth,depth],1)
         ir = x[:, 6:9,:,:]
-        # ir = torch.cat([ir,ir,ir],1)
 
         color_feas = self.color_moudle.forward_res3(color)
         depth_feas = self.depth_moudle.forward_res3(depth)
         ir_feas = self.ir_moudle.forward_res3(ir)
         fea = torch.cat([color_feas, depth_feas, ir_feas], dim=1)
-
-        # dropout2d
-        # fea = F.dropout2d(fea)
 
         x = self.res_0(fea)
         x = self.res_1(x)
@@ -119,8 +109,7 @@ def run_check_net():
     net = Net(num_class).cuda()
     net.set_mode('backup')
     print(net)
-    ## exit(0)
-    # net.load_pretrain('/media/st/SSD02/Projects/Kaggle_draw/models/resnet34-fold0/checkpoint/00006000_model.pth')
+
 
     logit = net.forward(input)
     loss  = criterion(logit, truth)

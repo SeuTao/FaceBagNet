@@ -1,20 +1,8 @@
 from utils import *
-import random
-import os
 import cv2
-from PIL import Image
-import numpy as np
-from imgaug import augmenters as iaa
-from data_insight import *
-
-TRAIN_DF  = []
-TEST_DF   = []
-
-DATA_ROOT = r'/data1/shentao/DATA/CVPR19_FaceAntiSpoofing'
-RESIZE_SIZE = 112
+from data_helper import *
 
 class FDDataset(Dataset):
-
     def __init__(self, mode, modality='color', fold_index='<NIL>', image_size=128, augment = None, augmentor = None, balance = True):
         super(FDDataset, self).__init__()
 
@@ -143,7 +131,6 @@ class FDDataset(Dataset):
             return torch.FloatTensor(image), test_id
 
 
-
     def __len__(self):
         return self.num_data
 
@@ -152,7 +139,7 @@ class FDDataset(Dataset):
 def run_check_train_data():
     from augmentation import color_augumentor
     augment = color_augumentor
-    dataset = FDDataset(mode = 'val', fold_index=-1, image_size=32,  augment=augment)
+    dataset = FDDataset(mode = 'train', fold_index=-1, image_size=32,  augment=augment)
     print(dataset)
 
     num = len(dataset)
@@ -161,7 +148,6 @@ def run_check_train_data():
         image, label = dataset[m]
         print(image.shape)
         print(label.shape)
-        # break
 
 # main #################################################################
 if __name__ == '__main__':

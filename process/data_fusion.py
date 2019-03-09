@@ -1,23 +1,8 @@
 from utils import *
-import random
-import os
-import cv2
 from augmentation import *
-
-TRAIN_DF  = []
-TEST_DF   = []
-
-from PIL import Image
-import numpy as np
-from imgaug import augmenters as iaa
-
-from data_insight import *
-
-DATA_ROOT = r'/data1/shentao/DATA/CVPR19_FaceAntiSpoofing'
-RESIZE_SIZE = 112
+from data_helper import *
 
 class FDDataset(Dataset):
-
     def __init__(self, mode, modality='color', fold_index='<NIL>', image_size=128, augment = None, balance = True):
         super(FDDataset, self).__init__()
         print('fold: '+str(fold_index))
@@ -102,7 +87,6 @@ class FDDataset(Dataset):
         ir = cv2.resize(ir,(RESIZE_SIZE,RESIZE_SIZE))
 
         if self.mode == 'train':
-
             color = color_augumentor(color,target_shape=(self.image_size, self.image_size, 3))
             depth = depth_augumentor(depth,target_shape=(self.image_size, self.image_size, 3))
             ir = ir_augumentor(ir,target_shape=(self.image_size, self.image_size, 3))
@@ -135,11 +119,9 @@ class FDDataset(Dataset):
             return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1]))
 
         elif self.mode == 'val':
-
             color = color_augumentor(color, target_shape=(self.image_size, self.image_size, 3),is_infer=True)
             depth = depth_augumentor(depth, target_shape=(self.image_size, self.image_size, 3),is_infer=True)
             ir = ir_augumentor(ir, target_shape=(self.image_size, self.image_size, 3),is_infer=True)
-
             n = len(color)
 
             color = np.concatenate(color, axis=0)
@@ -164,7 +146,6 @@ class FDDataset(Dataset):
             color = color_augumentor(color, target_shape=(self.image_size, self.image_size, 3), is_infer=True)
             depth = depth_augumentor(depth, target_shape=(self.image_size, self.image_size, 3), is_infer=True)
             ir = ir_augumentor(ir, target_shape=(self.image_size, self.image_size, 3), is_infer=True)
-
             n = len(color)
 
             color = np.concatenate(color, axis=0)
@@ -181,7 +162,6 @@ class FDDataset(Dataset):
             image = image.reshape([n, self.channels * 3, self.image_size, self.image_size])
             image = image / 255.0
             return torch.FloatTensor(image), test_id
-
 
     def __len__(self):
         return self.num_data

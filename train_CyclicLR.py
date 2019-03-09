@@ -1,12 +1,10 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] =  '5' #'3,2,1,0'
+os.environ['CUDA_VISIBLE_DEVICES'] =  '0' #'3,2,1,0'
 import sys
 sys.path.append("..")
 import argparse
 from process.data import *
 from process.augmentation import *
-from net.rate import *
-from file import *
 from metric import *
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
 
@@ -36,8 +34,6 @@ def run_train(config):
     out_dir = './models'
     out_dir = os.path.join(out_dir,config.model_name)
     initial_checkpoint = config.pretrained_model
-
-    # schduler = DecayScheduler(base_lr=0.1, decay=0.1, step=20) #it means 3 epoch for 0.01, 3 epoch for 0.001
     criterion  = softmax_cross_entropy_criterion
 
     ## setup  -----------------------------------------------------------------------------
@@ -58,9 +54,7 @@ def run_train(config):
 
     ## dataset ----------------------------------------
     log.write('** dataset setting **\n')
-
     augment = get_augment(config.image_mode)
-
     train_dataset = FDDataset(mode = 'train', modality=config.image_mode,image_size=config.image_size,
                               fold_index=config.train_fold_index,augment=augment)
     train_loader  = DataLoader(train_dataset,
@@ -100,8 +94,6 @@ def run_train(config):
 
     iter_smooth = 20
     start_iter = 0
-
-    # log.write('schduler\n  %s\n'%(schduler))
     log.write('\n')
 
     ## start training here! ##############################################
@@ -130,10 +122,6 @@ def run_train(config):
                                           take_snapshot=False,
                                           eta_min=1e-3)
 
-    # net.eval()
-    # valid_loss, _ = do_valid_test(net, valid_loader, criterion)
-    # net.train()
-
     global_min_acer = 1.0
     for cycle_index in range(config.cycle_num):
         print('cycle index: ' + str(cycle_index))
@@ -144,7 +132,6 @@ def run_train(config):
             lr = optimizer.param_groups[0]['lr']
             print('lr : {:.4f}'.format(lr))
 
-            # for epoch in range(train_epoch):
             sum_train_loss = np.zeros(6,np.float32)
             sum = 0
             optimizer.zero_grad()
@@ -176,7 +163,6 @@ def run_train(config):
                     sum = 0
                 i=i+1
 
-
             if epoch >= config.cycle_inter // 2:
                 net.eval()
                 valid_loss,_ = do_valid_test(net, valid_loader, criterion)
@@ -195,58 +181,15 @@ def run_train(config):
                     log.write('save global min acer model: ' + str(min_acer) + '\n')
 
             asterisk = ' '
-            log.write(config.model_name+'Cycle: %5.1f %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f  (%0.3f)%s  | %0.6f  %0.6f  %0.3f  (%0.3f) |%s \n' % (
+            log.write(config.model_name+' Cycle %d: %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f  (%0.3f)%s  | %0.6f  %0.6f  %0.3f  (%0.3f) |%s \n' % (
                 cycle_index, lr, iter, epoch,
                 valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3],asterisk,
                 batch_loss[0], 0.0, 0.0, batch_loss[1],
                 time_to_str((timer() - start), 'min')))
 
-            print(config.model_name+'Cycle: %5.1f %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f  (%0.3f)%s  | %0.6f  %0.6f  %0.3f  (%0.3f)  | %s' % (
-                cycle_index, lr, iter, epoch,
-                valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3],' ',
-                batch_loss[0], 0.0, 0.0, batch_loss[1],
-                time_to_str((timer() - start),'min')))
-
         ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
         torch.save(net.state_dict(), ckpt_name)
         log.write('save cycle ' + str(cycle_index) + ' final model \n')
-
-
-# def run_valid_10crop(config):
-#     out_dir = './models'
-#     out_dir = os.path.join(out_dir,config.model_name)
-#     initial_checkpoint = config.pretrained_model
-#
-#     augment = get_augment(config.image_mode)
-#
-#     ## net ---------------------------------------
-#     net = get_model(model_name=config.model, num_class=2,is_first_bn=True)
-#     print(net)
-#     net = torch.nn.DataParallel(net)
-#     net =  net.cuda()
-#
-#     if initial_checkpoint is not None:
-#         initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
-#         print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
-#         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
-#
-#     valid_dataset = FDDataset(mode = 'val',
-#                               modality=config.image_mode,
-#                               image_size=config.image_size,
-#                               fold_index=config.train_fold_index,
-#                               augment=augment)
-#
-#     valid_loader  = DataLoader( valid_dataset,
-#                                 shuffle=False,
-#                                 batch_size  = config.batch_size // 10,
-#                                 drop_last   = False,
-#                                 num_workers=8)
-#
-#     criterion = softmax_cross_entropy_criterion
-#     net.eval()
-#     valid_loss,out = do_valid_test(net, valid_loader, criterion)
-#     net.train()
-#     print('%0.6f  %0.6f  %0.3f  (%0.3f) \n' % (valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3]))
 
 def run_valid_10crop(config, dir):
     out_dir = './models'
@@ -293,29 +236,7 @@ def run_valid_10crop(config, dir):
     print('fp: '+str(fp))
     print('fn: '+str(fn))
 
-
     submission(out[0],save_dir+'_noTTA.txt')
-
-    # acer_min = 1.0
-    # thres_min = 0.0
-    # re = []
-    #
-    # for thres in np.arange(0.0, 1.0, 0.01):
-    #     acer, tp, fp, tn, fn= ACER(thres, out[0], out[1])
-    #     if acer < acer_min:
-    #         acer_min = acer
-    #         thres_min = thres
-    #         re = [tp, fp, tn, fn]
-    #
-    # print('\n ajust threshold')
-    # print(acer_min)
-    # print(thres_min)
-    #
-    # tp, fp, tn, fn = re
-    # print('tp: '+str(tp))
-    # print('tn: '+str(tn))
-    # print('fp: '+str(fp))
-    # print('fn: '+str(fn))
 
     try:
         TPR_FPR(out[0], out[1], fpr_target = 0.01)
@@ -396,13 +317,13 @@ def main(config):
         run_valid_10crop(config, dir='global')
 
     if config.mode == 'inferAllcycle_test':
-    #     for i in range(config.cycle_num):
-    #         config.pretrained_model = r'Cycle_'+str(i)+'_final_model.pth'
-    #         run_test_10crop(config, dir = 'final_test')
+        for i in range(config.cycle_num):
+            config.pretrained_model = r'Cycle_'+str(i)+'_final_model.pth'
+            run_test_10crop(config, dir = 'final_test')
 
-    #     for i in range(config.cycle_num):
-    #         config.pretrained_model = r'Cycle_'+str(i)+'_min_acer_model.pth'
-    #         run_test_10crop(config, dir = 'min_test')
+        for i in range(config.cycle_num):
+            config.pretrained_model = r'Cycle_'+str(i)+'_min_acer_model.pth'
+            run_test_10crop(config, dir = 'min_test')
 
         config.pretrained_model = r'global_min_acer_model.pth'
         run_test_10crop(config, dir='global_test')
@@ -414,19 +335,19 @@ if __name__ == '__main__':
     parser.add_argument('--train_fold_index', type=int, default = -1)
     parser.add_argument('--model', type=str, default='seresnext18')
 
-    parser.add_argument('--image_mode', type=str, default='ir')
-    parser.add_argument('--model_name', type=str, default='seresnext18_NewCrop_ir_with_pretrain_112to48_SnapshotEnsemble_NewVal')
+    parser.add_argument('--image_mode', type=str, default='depth')
+    parser.add_argument('--model_name', type=str, default='tmp')
 
     parser.add_argument('--image_size', type=int, default=48)
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--cycle_num', type=int, default=10)
     parser.add_argument('--cycle_inter', type=int, default=50)
 
-    # parser.add_argument('--mode', type=str, default='train', choices=['train','test','valid_10crop'])
-    # parser.add_argument('--pretrained_model', type=str, default=None)
-
-    parser.add_argument('--mode', type=str, default='inferAllcycle_test', choices=['train','test','valid_10crop'])
+    parser.add_argument('--mode', type=str, default='train', choices=['train','test','valid_10crop'])
     parser.add_argument('--pretrained_model', type=str, default=None)
+
+    # parser.add_argument('--mode', type=str, default='inferAllcycle_test', choices=['train','test','valid_10crop'])
+    # parser.add_argument('--pretrained_model', type=str, default=None)
 
     parser.add_argument('--iter_save_interval', type=int, default= 1000 * 2)
     parser.add_argument('--iter_valid', type=int, default=100)

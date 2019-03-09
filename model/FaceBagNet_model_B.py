@@ -4,8 +4,9 @@ import numpy as np
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-from backbone.senet import model_C
+from backbone.FaceBagNet import FaceBagNet_model_B
 BatchNorm2d = nn.BatchNorm2d
+
 
 ###########################################################################################3
 class Net(nn.Module):
@@ -27,7 +28,7 @@ class Net(nn.Module):
         if self.is_first_bn:
             self.first_bn = nn.BatchNorm2d(3)
 
-        self.encoder  = model_C()
+        self.encoder  = FaceBagNet_model_B()
         self.conv1 = self.encoder.layer0
         self.conv2 = self.encoder.layer1
         self.conv3 = self.encoder.layer2

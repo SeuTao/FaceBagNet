@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] =  '2'
+# os.environ['CUDA_VISIBLE_DEVICES'] =  '2'
 import sys
 sys.path.append("..")
 import argparse
@@ -12,9 +12,9 @@ def get_model(model_name, num_class):
     if model_name == 'baseline':
         from model_fusion.model_baseline_SEFusion import FusionNet
     elif model_name == 'model_A':
-        from model_fusion.model_A_SEFusion import FusionNet
+        from model_fusion.FaceBagNet_model_A_SEFusion import FusionNet
     elif model_name == 'model_B':
-        from model_fusion.model_B_SEFusion import FusionNet
+        from model_fusion.FaceBagNet_model_B_SEFusion import FusionNet
 
     net = FusionNet(num_class=num_class)
     return net
@@ -238,7 +238,7 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_fold_index', type=int, default = -1)
-    parser.add_argument('--model', type=str, default='model_A')
+    parser.add_argument('--model', type=str, default='model_B')
     parser.add_argument('--image_size', type=int, default=32)
     parser.add_argument('--image_mode', type=str, default='fusion')
 
@@ -246,7 +246,7 @@ if __name__ == '__main__':
     parser.add_argument('--cycle_num', type=int, default=10)
     parser.add_argument('--cycle_inter', type=int, default=50)
 
-    parser.add_argument('--mode', type=str, default='train', choices=['train','test','valid_10crop'])
+    parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)
 
     # parser.add_argument('--mode', type=str, default='infer_test', choices=['train','test','valid_10crop'])

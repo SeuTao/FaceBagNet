@@ -291,21 +291,21 @@ class SENet(nn.Module):
         return x
 
 
-def model_A(num_classes=2):
+def FaceBagNet_model_A(num_classes=2):
     model = SENet(SEResNeXtBottleneck, [2, 2, 2, 2], groups=32, reduction=16,
                   dropout_p=None, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     return model
 
-def model_B(num_classes=2):
+def FaceBagNet_model_B(num_classes=2):
     model = SENet(SEResNeXtBottleneck, [2, 4, 4, 2], groups=32, reduction=16,
                   dropout_p=None, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,
                   num_classes=num_classes)
     return model
 
-def model_C(num_classes=2):
+def FaceBagNet_model_C(num_classes=2):
     model = SENet(SEResNeXtBottleneck, [3, 4, 4, 3], groups=16, reduction=16,
                   dropout_p=None, inplanes=64, input_3x3=False,
                   downsample_kernel_size=1, downsample_padding=0,

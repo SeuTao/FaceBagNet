@@ -36,20 +36,6 @@ class FusionNet(nn.Module):
 
         self.ir_moudle = Net(num_class=num_class,is_first_bn=True)
 
-        # self.color_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_color_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.depth_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_depth_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.ir_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_ir_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-
-        # for param in self.color_moudle.parameters():
-        #     param.detach_()
-        # for param in self.depth_moudle.parameters():
-        #     param.detach_()
-        # for param in self.ir_moudle.parameters():
-        #     param.detach_()
-
         self.res_0 = self._make_layer(BasicBlock, 384, 256, 2, stride=2)
         self.res_1 = self._make_layer(BasicBlock, 256, 512, 2, stride=2)
 

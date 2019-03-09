@@ -5,7 +5,17 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
+from backbone.BagNet import bagnet33
+
+from modified_resnet import Modified_resnet18
+
 BatchNorm2d = nn.BatchNorm2d
+
+
+from  torchvision.models.resnet import BasicBlock,ResNet
+def resnet_tiny( **kwargs):
+    model = ResNet(BasicBlock, [1, 1, 1, 1], **kwargs)
+    return model
 
 ###########################################################################################3
 class Net(nn.Module):
@@ -13,40 +23,36 @@ class Net(nn.Module):
         #raise NotImplementedError
         pretrain_state_dict = torch.load(pretrain_file)
         state_dict = self.state_dict()
+
         keys = list(state_dict.keys())
         for key in keys:
-            state_dict[key] = pretrain_state_dict[key]
+            state_dict[key] = pretrain_state_dict['module.'+key]
 
         self.load_state_dict(state_dict)
-        print('')
+        print('load: '+pretrain_file)
 
 
-    def __init__(self, num_class=2, is_first_bn=True):
+    def __init__(self, num_class=2, id_class = 300, is_first_bn = False):
         super(Net,self).__init__()
-
-        print('resnet34!!!!!!!!!!!')
 
         self.is_first_bn = is_first_bn
 
         if self.is_first_bn:
             self.first_bn = nn.BatchNorm2d(3)
 
-        self.encoder  = tvm.resnet34(pretrained=True)
+        self.encoder  = bagnet33(pretrained=False)
 
-        self.relu = nn.ReLU(inplace=True)
-        self.pool = nn.MaxPool2d(2, 2)
         self.conv1 = nn.Sequential(self.encoder.conv1,
+                                   self.encoder.conv2,
                                    self.encoder.bn1,
-                                   self.encoder.relu,
-                                   self.pool)
+                                   self.encoder.relu)
 
         self.conv2 = self.encoder.layer1
         self.conv3 = self.encoder.layer2
         self.conv4 = self.encoder.layer3
         self.conv5 = self.encoder.layer4
 
-        self.fc = nn.Sequential(nn.Linear(512, num_class))
-
+        self.fc = nn.Sequential(nn.Linear(256*4, num_class))
 
 
     def forward(self, x):
@@ -68,12 +74,14 @@ class Net(nn.Module):
         x = self.conv2(x) #; print('e2',x.size())
         x = self.conv3(x) #; print('e3',x.size())
         x = self.conv4(x) #; print('e4',x.size())
-        x = self.conv5(x) #; print('e5',x.size())
+        # x = self.conv5(x) #; print('e5',x.size())
 
-        x = F.adaptive_avg_pool2d(x, output_size=1).view(batch_size,-1)
-        x = F.dropout(x, p=0.50, training=self.training)
-        logit = self.fc(x)
-        return logit,None,None
+        fea = F.adaptive_avg_pool2d(x, output_size=1).view(batch_size,-1)
+        fea = F.dropout(fea, p=0.50, training=self.training)
+        logit = self.fc(fea)
+
+
+        return logit, None,None
 
     def forward_res3(self, x):
         batch_size,C,H,W = x.shape
@@ -125,15 +133,12 @@ def run_check_net():
 
     input = to_var(input)
     truth = to_var(truth)
-
     #---
     criterion = softmax_cross_entropy_criterion
     net = Net(num_class).cuda()
     net.set_mode('backup')
     print(net)
     ## exit(0)
-
-
 
 ########################################################################################
 if __name__ == '__main__':

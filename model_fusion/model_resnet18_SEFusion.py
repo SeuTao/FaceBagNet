@@ -1,5 +1,4 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '4'
 from utils import *
 import torchvision.models as tvm
 from torchvision.models.resnet import BasicBlock
@@ -9,7 +8,6 @@ import torch.nn.functional as F
 import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
-
 from model.model_resnet18 import Net
 
 class SEModule(nn.Module):
@@ -52,25 +50,8 @@ class FusionNet(nn.Module):
         super(FusionNet,self).__init__()
 
         self.color_moudle  = Net(num_class=num_class,is_first_bn=True)
-
         self.depth_moudle = Net(num_class=num_class,is_first_bn=True)
-
         self.ir_moudle = Net(num_class=num_class,is_first_bn=True)
-
-        # self.color_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_color_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.depth_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_depth_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-        # self.ir_moudle.load_pretrain(r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
-        #                                 r'r18_ir_fold0_RE_rotate_randomcrop0.1_validCenterCrop_firstBN/checkpoint/min_acer_model.pth')
-
-        # for param in self.color_moudle.parameters():
-        #     param.detach_()
-        # for param in self.depth_moudle.parameters():
-        #     param.detach_()
-        # for param in self.ir_moudle.parameters():
-        #     param.detach_()
-
 
         self.color_SE = SEModule(128)
         self.depth_SE = SEModule(128)
@@ -105,11 +86,8 @@ class FusionNet(nn.Module):
         batch_size,C,H,W = x.shape
 
         color = x[:, 0:3,:,:]
-        # color = torch.cat([color,color,color],1)
         depth = x[:, 3:6,:,:]
-        # depth = torch.cat([depth,depth,depth],1)
         ir = x[:, 6:9,:,:]
-        # ir = torch.cat([ir,ir,ir],1)
 
         color_feas = self.color_moudle.forward_res3(color)
         depth_feas = self.depth_moudle.forward_res3(depth)

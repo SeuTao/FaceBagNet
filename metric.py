@@ -2,6 +2,8 @@ import numpy as np
 import torch
 from scipy import interpolate
 
+from tqdm import tqdm
+
 def calculate_accuracy(threshold, dist, actual_issame):
     predict_issame = np.less(1-dist, 1-threshold)
     tp = np.sum(np.logical_and(predict_issame, actual_issame))
@@ -39,7 +41,7 @@ def TPR_FPR( dist, actual_issame, fpr_target = 0.001):
     # Positive
     # Rate(FPR):
     # FPR = FP / (FP + TN)
-    #
+
     # Positive
     # Rate(TPR):
     # TPR = TP / (TP + FN)
@@ -82,19 +84,25 @@ def metric(logit, truth):
     correct = np.mean(correct)
     return correct, prob
 
-def do_valid_test( net, test_loader, criterion ):
+def do_valid( net, test_loader, criterion ):
     valid_num  = 0
     losses   = []
     corrects = []
     probs = []
     labels = []
 
-    for input, truth, _ in test_loader:
+    for input, truth in test_loader:
+        b,n,c,w,h = input.size()
+        input = input.view(b*n,c,w,h)
+
         input = input.cuda()
         truth = truth.cuda()
 
         with torch.no_grad():
             logit,_,_   = net(input)
+            logit = logit.view(b,n,2)
+            logit = torch.mean(logit, dim = 1, keepdim = False)
+
             truth = truth.view(logit.shape[0])
             loss    = criterion(logit, truth, False)
             correct, prob = metric(logit, truth)
@@ -105,8 +113,9 @@ def do_valid_test( net, test_loader, criterion ):
         probs.append(prob.data.cpu().numpy())
         labels.append(truth.data.cpu().numpy())
 
-    assert(valid_num == len(test_loader.sampler))
-    #------------------------------------------------------
+    # assert(valid_num == len(test_loader.sampler))
+    #----------------------------------------------
+
     correct = np.concatenate(corrects)
     loss    = np.concatenate(losses)
     loss    = loss.mean()
@@ -118,17 +127,83 @@ def do_valid_test( net, test_loader, criterion ):
     tpr, fpr, acc = calculate_accuracy(0.5, probs[:,1], labels)
     acer,_,_,_,_ = ACER(0.5, probs[:, 1], labels)
 
-    # acer_min = 1.0
-    # # thres_min = 0.0
-    # for thres in np.arange(0.0, 1.0, 0.01):
-    #     acer,_,_,_,_ = ACER(thres, probs[:, 1], labels)
-    #     if acer < acer_min:
-    #         acer_min = acer
-    #         # thres_min = thres
+    valid_loss = np.array([
+        loss, acer, acc, correct
+    ])
+
+    return valid_loss,[probs[:, 1], labels]
+
+def do_valid_test( net, test_loader, criterion ):
+    valid_num  = 0
+    losses   = []
+    corrects = []
+    probs = []
+    labels = []
+
+
+    for i, (input, truth) in enumerate(tqdm(test_loader)):
+    # for input, truth in test_loader:
+        b,n,c,w,h = input.size()
+        input = input.view(b*n,c,w,h)
+
+        input = input.cuda()
+        truth = truth.cuda()
+
+        with torch.no_grad():
+            logit,_,_   = net(input)
+            logit = logit.view(b,n,2)
+            logit = torch.mean(logit, dim = 1, keepdim = False)
+
+            truth = truth.view(logit.shape[0])
+            loss    = criterion(logit, truth, False)
+            correct, prob = metric(logit, truth)
+
+        valid_num += len(input)
+        losses.append(loss.data.cpu().numpy())
+        corrects.append(np.asarray(correct).reshape([1]))
+        probs.append(prob.data.cpu().numpy())
+        labels.append(truth.data.cpu().numpy())
+
+    # assert(valid_num == len(test_loader.sampler))
+    #----------------------------------------------
+
+    correct = np.concatenate(corrects)
+    loss    = np.concatenate(losses)
+    loss    = loss.mean()
+    correct = np.mean(correct)
+
+    probs = np.concatenate(probs)
+    labels = np.concatenate(labels)
+
+    tpr, fpr, acc = calculate_accuracy(0.5, probs[:,1], labels)
+    acer,_,_,_,_ = ACER(0.5, probs[:, 1], labels)
 
     valid_loss = np.array([
         loss, acer, acc, correct
     ])
 
     return valid_loss,[probs[:, 1], labels]
+
+def infer_test( net, test_loader):
+    valid_num  = 0
+    probs = []
+
+    for i, (input, truth) in enumerate(tqdm(test_loader)):
+        b,n,c,w,h = input.size()
+        input = input.view(b*n,c,w,h)
+        input = input.cuda()
+
+        with torch.no_grad():
+            logit,_,_   = net(input)
+            logit = logit.view(b,n,2)
+            logit = torch.mean(logit, dim = 1, keepdim = False)
+            prob = F.softmax(logit, 1)
+
+        valid_num += len(input)
+        probs.append(prob.data.cpu().numpy())
+
+    probs = np.concatenate(probs)
+    return probs[:, 1]
+
+
 

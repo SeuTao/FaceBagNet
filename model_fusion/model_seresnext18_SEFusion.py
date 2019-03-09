@@ -1,7 +1,5 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '4'
 from utils import *
-import torchvision.models as tvm
 from torchvision.models.resnet import BasicBlock
 import torch.nn as nn
 import torch
@@ -10,7 +8,7 @@ import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
 
-from model.model_resnet18 import Net
+from model.model_seresnext18 import Net
 
 class SEModule(nn.Module):
 
@@ -33,7 +31,6 @@ class SEModule(nn.Module):
         x = self.sigmoid(x)
         return module_input * x
 
-
 ###########################################################################################3
 class FusionNet(nn.Module):
     def load_pretrain(self, pretrain_file):
@@ -52,21 +49,25 @@ class FusionNet(nn.Module):
         super(FusionNet,self).__init__()
 
         self.color_moudle  = Net(num_class=num_class,is_first_bn=True)
-
         self.depth_moudle = Net(num_class=num_class,is_first_bn=True)
-
         self.ir_moudle = Net(num_class=num_class,is_first_bn=True)
 
-        self.color_SE = SEModule(128)
-        self.depth_SE = SEModule(128)
-        self.ir_SE = SEModule(128)
 
-        self.res_0 = self._make_layer(BasicBlock, 384, 256, 2, stride=2)
+        self.color_SE = SEModule(512)
+        self.depth_SE = SEModule(512)
+        self.ir_SE = SEModule(512)
+
+        self.bottleneck = nn.Sequential(nn.Conv2d(512*3, 128*3, kernel_size=1, padding=0),
+                                         nn.BatchNorm2d(128*3),
+                                         nn.ReLU(inplace=True))
+
+        self.res_0 = self._make_layer(BasicBlock, 128*3, 256, 2, stride=2)
+        self.res_1 = self._make_layer(BasicBlock, 256, 512, 2, stride=2)
 
         self.fc = nn.Sequential(nn.Dropout(0.5),
-                                nn.Linear(256, 128),
+                                nn.Linear(512, 256),
                                 nn.ReLU(inplace=True),
-                                nn.Linear(128, num_class))
+                                nn.Linear(256, num_class))
 
     def _make_layer(self, block, inplanes, planes, blocks, stride=1):
         downsample = None
@@ -105,7 +106,10 @@ class FusionNet(nn.Module):
 
         fea = torch.cat([color_feas, depth_feas, ir_feas], dim=1)
 
+        fea = self.bottleneck(fea)
+
         x = self.res_0(fea)
+        x = self.res_1(x)
         x = F.adaptive_avg_pool2d(x, output_size=1).view(batch_size, -1)
         x = self.fc(x)
         return x,None,None

@@ -78,20 +78,6 @@ def read_list_from_file(list_file, comment='#', func=None):
         strings=[func(s) for s in strings]
 
     return strings
-
-
-
-def load_pickle_file(pickle_file):
-    with open(pickle_file,'rb') as f:
-        x = pickle.load(f)
-    return x
-
-def save_pickle_file(pickle_file, x):
-    with open(pickle_file, 'wb') as f:
-        pickle.dump(x, f, pickle.HIGHEST_PROTOCOL)
-
-
-
 # backup ------------------------------------
 
 #https://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory

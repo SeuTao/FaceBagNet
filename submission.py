@@ -17,15 +17,12 @@ def load_sub(sub = r'r18_val0.458.txt'):
     return sub_dict
 
 def ensemble(sub_list, save_name):
-
     dict_list = []
     for sub in sub_list:
-        # print(sub)
         sub_dict = load_sub(sub)
         dict_list.append(sub_dict)
 
-    test_list = load_test_list()
-
+    test_list = load_val_list()
     probs = []
     labels = []
     for name,_,_,label in test_list:
@@ -44,15 +41,12 @@ def ensemble(sub_list, save_name):
     acer, tp, fp, tn, fn = ACER(0.5, probs, labels)
     print('\nonline')
     print(acer)
-    print('tp: '+str(tp)+' gt: '+str(2987))
-    print('tn: '+str(tn)+' gt: '+str(6533))
-    print('fp: '+str(fp)+'  gt: '+str(81))
-    print('fn: '+str(fn)+'   gt: '+str(7))
-
+    print('tp: '+str(tp))
+    print('tn: '+str(tn))
+    print('fp: '+str(fp))
+    print('fn: '+str(fn))
 
     submission(probs,save_name)
-
-    # TPR_FPR( probs, labels)
     try:
         TPR_FPR(probs, labels, fpr_target = 0.01)
         TPR_FPR(probs, labels, fpr_target = 0.001)
@@ -60,11 +54,92 @@ def ensemble(sub_list, save_name):
     except:
         return
 
-def compare(sub=r'r18_val.txt'):
+def ensemble_valid_dir(sub_dir_list, save_name):
+    dict_list = []
+    for sub_dir in sub_dir_list:
+        print(len(os.listdir(sub_dir)))
+        for sub in os.listdir(sub_dir):
+            if '.txt' in sub:
+                sub_dict = load_sub(os.path.join(sub_dir,sub))
+                dict_list.append(sub_dict)
 
+    test_list = load_val_list()
+
+    probs = []
+    labels = []
+    for name,_,_,label in test_list:
+
+        prob_tmp = 0.0
+        for sub_dict in dict_list:
+            prob_tmp += sub_dict[name] / (len(dict_list)*1.0)
+
+        probs.append(prob_tmp)
+        labels.append(int(label))
+
+    probs = np.asarray(probs)
+    labels = np.asarray(labels)
+
+    acer, tp, fp, tn, fn = ACER(0.5, probs, labels)
+    print('\nonline')
+    print(acer)
+    print('tp: '+str(tp))
+    print('tn: '+str(tn))
+    print('fp: '+str(fp))
+    print('fn: '+str(fn))
+
+    acer_min = 1.0
+    thres_min = 0.0
+    re = []
+    for thres in np.arange(0.0, 1.0, 0.01):
+        acer, tp, fp, tn, fn= ACER(thres, probs, labels)
+        if acer < acer_min:
+            acer_min = acer
+            thres_min = thres
+            re = [tp, fp, tn, fn]
+
+    print('ajust')
+    print(acer_min)
+    print(thres_min)
+
+    tp, fp, tn, fn = re
+    print('tp: '+str(tp))
+    print('tn: '+str(tn))
+    print('fp: '+str(fp))
+    print('fn: '+str(fn))
+
+    submission(probs,save_name, mode='valid')
+    try:
+        TPR_FPR(probs, labels, fpr_target = 0.01)
+        TPR_FPR(probs, labels, fpr_target = 0.001)
+        TPR_FPR(probs, labels, fpr_target = 0.0001)
+    except:
+        return
+
+def ensemble_test_dir(sub_dir_list, save_name):
+    dict_list = []
+    for sub_dir in sub_dir_list:
+        print(len(os.listdir(sub_dir)))
+        for sub in os.listdir(sub_dir):
+            if '.txt' in sub:
+                sub_dict = load_sub(os.path.join(sub_dir,sub))
+                dict_list.append(sub_dict)
+    test_list = load_test_list()
+
+    probs = []
+    for name,_,_ in test_list:
+        prob_tmp = 0.0
+        for sub_dict in dict_list:
+            prob_tmp += sub_dict[name] / (len(dict_list)*1.0)
+        probs.append(prob_tmp)
+
+    probs = np.asarray(probs)
+    submission(probs,save_name, mode='test')
+
+
+def compare(sub=r'r18_val.txt'):
     sub_dict = load_sub(sub)
     print(len(sub_dict))
-    test_list = load_test_list()
+    test_list = load_val_list()
 
     probs = []
     labels = []
@@ -96,10 +171,9 @@ def compare(sub=r'r18_val.txt'):
     # print('fp: '+str(fp))
     # print('fn: '+str(fn))
 
-    # tpr, fpr, acc = calculate_accuracy(0.5, probs, labels)
     acer, tp, fp, tn, fn = ACER(0.5, probs, labels)
     print('\nonline')
-    print(acer)
+    print('acer: ' + str(acer))
     print('tp: '+str(tp))
     print('tn: '+str(tn))
     print('fp: '+str(fp))
@@ -232,7 +306,6 @@ def compare_hand_label():
     #     if item not in dict_fp_n:
     #         dict_fp_p[item] = 1
 
-
     # to be removed
     print(len(dict_fn_n))
 
@@ -358,7 +431,6 @@ if __name__ == '__main__':
 
     # ensemble(sub_list0, 'tmp.txt')
 
-
     sub_ir = [r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_0_min_acer_model.pth0.0299_noTTA.txt',
                  r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_1_min_acer_model.pth0.1650_noTTA.txt',
                  r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_pretrain_48_ir_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_2_min_acer_model.pth0.0231_noTTA.txt',
@@ -410,19 +482,65 @@ if __name__ == '__main__':
         r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_9_min_acer_model.pth_noTTA.txt',
         ]
 
-    ensemble(sub_color, 'tmp.txt')
-    ensemble(sub_depth, 'DepthSnapshotEnsemble_10cycle50epoch.txt')
-    ensemble(sub_ir, 'IrSnapshotEnsemble_10cycle50epoch.txt')
-    ensemble(sub_color + sub_ir, 'Color_Ir_SnapshotEnsemble_10cycle50epoch.txt')
+    # sub_fusion = [
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_0_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_1_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_2_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_3_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_4_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_5_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_6_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_7_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_8_min_acer_model.pth_noTTA.txt',
+    #     r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/r18_fusion_pretrain48_fold-1_rotate_RC0.6_SnapshotEnsemble/checkpoint/Cycle_9_min_acer_model.pth_noTTA.txt',
+    #     ]
+
+    # sub_fusion = [r'color_final.txt','depth_final.txt','ir_final.txt']
+    sub_fusion = [r'color_min.txt','depth_min.txt','ir_min.txt']
+
+    # sub_fusion = ['depth_min.txt']
+    # ensemble(sub_fusion, 'tmp.txt')
+
+    dir = r'/data1/shentao/Projects/CVPR19FaceAntiSpoofing/models/'
+    dir_list = [
+                dir + r'r18_fusion_NewCrop_pretrain_112to32_SnapshotEnsemble_NewVal/checkpoint/global',
+                dir + r'r18_fusion_NewCrop_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global',
+                dir + r'r18_fusion_NewCrop_pretrain_112to64_SnapshotEnsemble_NewVal/checkpoint/global',
+
+                dir + r'seresnext18_NewCrop_color_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global',
+                dir + r'seresnext18_NewCrop_depth_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global',
+                dir + r'seresnext18_NewCrop_ir_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global',
+                ]
+
+    ensemble_valid_dir(dir_list, 'valid_first.txt')
+
+    dir_list = [
+
+                dir + r'r18_fusion_NewCrop_pretrain_112to32_SnapshotEnsemble_NewVal/checkpoint/global_test',
+                dir + r'r18_fusion_NewCrop_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
+                dir + r'r18_fusion_NewCrop_pretrain_112to64_SnapshotEnsemble_NewVal/checkpoint/global_test',
+                dir + r'seresnext18_NewCrop_color_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
+                dir + r'seresnext18_NewCrop_depth_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test',
+                dir + r'seresnext18_NewCrop_ir_with_pretrain_112to48_SnapshotEnsemble_NewVal/checkpoint/global_test'
+
+                ]
+
+    ensemble_test_dir(dir_list, 'test_first.txt')
+
+    # ensemble(sub_color, 'ColorSnapshotEnsemble_10cycle50epoch.txt')
+    # ensemble(sub_depth, 'DepthSnapshotEnsemble_10cycle50epoch.txt')
+    # ensemble(sub_ir, 'IrSnapshotEnsemble_10cycle50epoch.txt')
+
+    # sub_fusion = [r'ColorSnapshotEnsemble_10cycle50epoch.txt', 'DepthSnapshotEnsemble_10cycle50epoch.txt', 'IrSnapshotEnsemble_10cycle50epoch.txt']
+    # ensemble( sub_fusion, 'tmp.txt')
 
     # nrom_thres_()
-
     # compare(sub=r'r18_val_thres_change.txt')
     # compare(sub=r'r18_val.txt')
-    # compare(sub=r'r18_fusion_4tAve_9cropTTA.txt')
-    # compare(sub=r'r18_fusion_4tAve_9cropTTA_ImagenetPretrain.txt')
+    # compare(sub=r'r18_fusion_add_flipUD_9cropTTA_ImagenetPretrain_t1.txt')
+    # compare(sub=r'3ModalitySnapshotEnsemble_10cycle50epoch.txt')
+    # compare(sub=r'tmp.txt')
     # extract(sub=r'r18_fusion_4tAve_9cropTTA_ImagenetPretrain.txt',dir='./0110_out_0')
-
     # compare_hand_label()
     # find_thres(pos_num=2987+81)
     # find_thres(sub=r'r18_flipTTA.txt', pos_num = 2994+909 )

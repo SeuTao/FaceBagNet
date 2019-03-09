@@ -28,12 +28,10 @@ def acc(preds,targs,th=0.0):
     targs = targs.int()
     return (preds==targs).float().mean()
 
-
 def dot_numpy(vector1 , vector2,emb_size = 512):
     vector1 = vector1.reshape([-1, emb_size])
     vector2 = vector2.reshape([-1, emb_size])
     vector2 = vector2.transpose(1,0)
-
     cosV12 = np.dot(vector1, vector2)
     return cosV12
 
@@ -77,7 +75,6 @@ def do_valid( net, valid_loader, criterion ):
 
 
     assert(valid_num == len(valid_loader.sampler))
-
     target = np.concatenate(target_list)
     output = np.concatenate(output_list)
 
@@ -91,80 +88,79 @@ def do_valid( net, valid_loader, criterion ):
 
     loss    = np.concatenate(losses)
     loss    = loss.mean()
-
     valid_loss = np.array([ loss, f1_max, thres_max])
     return valid_loss
 
 
-def do_valid_8TTA(net, valid_loader, criterion):
-    valid_num = 0
-    losses = []
-
-    f1 = []
-    target_list = []
-    output_list = []
-    for input, truth in valid_loader:
-        img = input.cpu().data.numpy()
-        img1 = np.array(img)
-        img2 = np.array(img1)[:, :, ::-1, :]
-        img3 = np.array(img1)[:, :, :, ::-1]
-        img4 = np.array(img2)[:, :, :, ::-1]
-
-        img_flip = np.concatenate([img1, img2, img3, img4])
-        img_flip_trans = np.transpose(img_flip, (0, 1, 3, 2))
-
-        img_all = np.concatenate([img_flip, img_flip_trans], axis=0)
-        y_pred, _ = net(to_var(torch.FloatTensor(img_all)))
-
-        batch_size = len(input)
-        # y_pred = y_pred.sigmoid().cpu().data.numpy()
-
-        logit = y_pred[:(0 + 1) * batch_size] + \
-                y_pred[(1) * batch_size:(1 + 1) * batch_size] + \
-                y_pred[(2) * batch_size:(2 + 1) * batch_size] + \
-                y_pred[(3) * batch_size:(3 + 1) * batch_size] + \
-                y_pred[(4) * batch_size:(4 + 1) * batch_size] + \
-                y_pred[(5) * batch_size:(5 + 1) * batch_size] + \
-                y_pred[(6) * batch_size:(6 + 1) * batch_size] + \
-                y_pred[(7) * batch_size:]
-
-        logit /= 8.0
-
-
-        # input = input.cuda()
-        truth = truth.cuda()
-        #
-        # input = to_var(input)
-        truth = to_var(truth)
-        #
-        # logit, _ = net(input)
-
-        loss = criterion(logit, truth, False)
-
-        valid_num += len(input)
-        losses.append(loss.data.cpu().numpy())
-
-        target_list.append(truth.cpu().data.numpy())
-        output_list.append(logit.sigmoid().cpu().data.numpy())
-
-    assert (valid_num == len(valid_loader.sampler))
-
-    target = np.concatenate(target_list)
-    output = np.concatenate(output_list)
-
-    f1_max = 0.0
-    thres_max = 0.0
-    for thres in np.arange(0.0, 0.8, 0.05):
-        f1 = f1_score(target, output > thres, average='macro')
-        if f1_max < f1:
-            f1_max = f1
-            thres_max = thres
-
-    loss = np.concatenate(losses)
-    loss = loss.mean()
-
-    valid_loss = np.array([loss, f1_max, thres_max])
-    return valid_loss
+# def do_valid_8TTA(net, valid_loader, criterion):
+#     valid_num = 0
+#     losses = []
+#
+#     f1 = []
+#     target_list = []
+#     output_list = []
+#     for input, truth in valid_loader:
+#         img = input.cpu().data.numpy()
+#         img1 = np.array(img)
+#         img2 = np.array(img1)[:, :, ::-1, :]
+#         img3 = np.array(img1)[:, :, :, ::-1]
+#         img4 = np.array(img2)[:, :, :, ::-1]
+#
+#         img_flip = np.concatenate([img1, img2, img3, img4])
+#         img_flip_trans = np.transpose(img_flip, (0, 1, 3, 2))
+#
+#         img_all = np.concatenate([img_flip, img_flip_trans], axis=0)
+#         y_pred, _ = net(to_var(torch.FloatTensor(img_all)))
+#
+#         batch_size = len(input)
+#         # y_pred = y_pred.sigmoid().cpu().data.numpy()
+#
+#         logit = y_pred[:(0 + 1) * batch_size] + \
+#                 y_pred[(1) * batch_size:(1 + 1) * batch_size] + \
+#                 y_pred[(2) * batch_size:(2 + 1) * batch_size] + \
+#                 y_pred[(3) * batch_size:(3 + 1) * batch_size] + \
+#                 y_pred[(4) * batch_size:(4 + 1) * batch_size] + \
+#                 y_pred[(5) * batch_size:(5 + 1) * batch_size] + \
+#                 y_pred[(6) * batch_size:(6 + 1) * batch_size] + \
+#                 y_pred[(7) * batch_size:]
+#
+#         logit /= 8.0
+#
+#
+#         # input = input.cuda()
+#         truth = truth.cuda()
+#         #
+#         # input = to_var(input)
+#         truth = to_var(truth)
+#         #
+#         # logit, _ = net(input)
+#
+#         loss = criterion(logit, truth, False)
+#
+#         valid_num += len(input)
+#         losses.append(loss.data.cpu().numpy())
+#
+#         target_list.append(truth.cpu().data.numpy())
+#         output_list.append(logit.sigmoid().cpu().data.numpy())
+#
+#     assert (valid_num == len(valid_loader.sampler))
+#
+#     target = np.concatenate(target_list)
+#     output = np.concatenate(output_list)
+#
+#     f1_max = 0.0
+#     thres_max = 0.0
+#     for thres in np.arange(0.0, 0.8, 0.05):
+#         f1 = f1_score(target, output > thres, average='macro')
+#         if f1_max < f1:
+#             f1_max = f1
+#             thres_max = thres
+#
+#     loss = np.concatenate(losses)
+#     loss = loss.mean()
+#
+#     valid_loss = np.array([loss, f1_max, thres_max])
+#     return valid_loss
 
 
 def load_CLASS_NAME():
@@ -201,7 +197,6 @@ def load_train_map():
         id = line[2]
 
         label_dict[img_name] = [index,id]
-
 
     return label_dict
 

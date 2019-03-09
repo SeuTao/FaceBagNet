@@ -9,7 +9,6 @@ from modified_resnet import Modified_resnet18
 
 BatchNorm2d = nn.BatchNorm2d
 
-
 from  torchvision.models.resnet import BasicBlock,ResNet
 def resnet_tiny( **kwargs):
     model = ResNet(BasicBlock, [1, 1, 1, 1], **kwargs)
@@ -18,13 +17,8 @@ def resnet_tiny( **kwargs):
 ###########################################################################################3
 class Net(nn.Module):
     def load_pretrain(self, pretrain_file):
-        #raise NotImplementedError
         pretrain_state_dict = torch.load(pretrain_file)
         state_dict = self.state_dict()
-
-        # keys = list(pretrain_state_dict.keys())
-        # for key in keys:
-        #     print(key)
 
         keys = list(state_dict.keys())
         for key in keys:
@@ -43,7 +37,6 @@ class Net(nn.Module):
             self.first_bn = nn.BatchNorm2d(3)
 
         self.encoder  = tvm.resnet18(pretrained=True)
-
         self.relu = nn.ReLU(inplace=True)
         self.pool = nn.MaxPool2d(2, 2)
 
@@ -59,32 +52,6 @@ class Net(nn.Module):
 
         self.fc = nn.Sequential(nn.Linear(512, num_class))
         self.id_fc = nn.Sequential(nn.Linear(512, id_class))
-
-    # def forward(self, x):
-    #     batch_size,C,H,W = x.shape
-    #
-    #     if self.is_first_bn:
-    #         x = self.first_bn(x)
-    #     else:
-    #         mean=[0.485, 0.456, 0.406] #rgb
-    #         std =[0.229, 0.224, 0.225]
-    #
-    #         x = torch.cat([
-    #             (x[:,[0]]-mean[0])/std[0],
-    #             (x[:,[1]]-mean[1])/std[1],
-    #             (x[:,[2]]-mean[2])/std[2],
-    #         ],1)
-    #
-    #     x = self.conv1(x) #; print('e1',x.size())
-    #     x = self.conv2(x) #; print('e2',x.size())
-    #     x = self.conv3(x) #; print('e3',x.size())
-    #     x = self.conv4(x) #; print('e4',x.size())
-    #     x = self.conv5(x) #; print('e5',x.size())
-    #
-    #     x = F.adaptive_avg_pool2d(x, output_size=1).view(batch_size,-1)
-    #     x = F.dropout(x, p=0.50, training=self.training)
-    #     logit = self.fc(x)
-    #     return logit
 
     def forward(self, x):
         batch_size,C,H,W = x.shape

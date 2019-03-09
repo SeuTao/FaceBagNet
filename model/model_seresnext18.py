@@ -5,10 +5,11 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from model.modified_resnet import Modified_resnet18
+from backbone.senet import se_resnext18_32x4d
+
+from modified_resnet import Modified_resnet18
 
 BatchNorm2d = nn.BatchNorm2d
-
 
 from  torchvision.models.resnet import BasicBlock,ResNet
 def resnet_tiny( **kwargs):
@@ -18,13 +19,8 @@ def resnet_tiny( **kwargs):
 ###########################################################################################3
 class Net(nn.Module):
     def load_pretrain(self, pretrain_file):
-        #raise NotImplementedError
         pretrain_state_dict = torch.load(pretrain_file)
         state_dict = self.state_dict()
-
-        # keys = list(pretrain_state_dict.keys())
-        # for key in keys:
-        #     print(key)
 
         keys = list(state_dict.keys())
         for key in keys:
@@ -42,33 +38,16 @@ class Net(nn.Module):
         if self.is_first_bn:
             self.first_bn = nn.BatchNorm2d(3)
 
-        self.encoder  = tvm.resnet18(pretrained=False)
+        self.encoder  = se_resnext18_32x4d()
 
-        self.relu = nn.ReLU(inplace=True)
-        self.pool = nn.MaxPool2d(2, 2)
-
-        self.conv1 = nn.Sequential(self.encoder.conv1,
-                                   self.encoder.bn1,
-                                   self.encoder.relu,
-                                   self.pool)
-
+        self.conv1 = self.encoder.layer0
         self.conv2 = self.encoder.layer1
         self.conv3 = self.encoder.layer2
         self.conv4 = self.encoder.layer3
         self.conv5 = self.encoder.layer4
 
-        self.real_embedding = nn.Sequential(nn.Linear(512, 512),
-                                            nn.ReLU(True))
-
-        self.fake_embedding = nn.Sequential(nn.Linear(512, 512),
-                                            nn.ReLU(True))
-
-        self.id_real_fc = nn.Sequential(nn.Linear(512, id_class))
-        self.id_fake_fc = nn.Sequential(nn.Linear(512, id_class))
-
-        # self.final_fc = nn.Sequential(nn.Dropout(0.5),nn.Linear(512*2, num_class))
-        self.final_fc_real = nn.Sequential(nn.Linear(512, 1))
-        self.final_fc_fake = nn.Sequential(nn.Linear(512, 1))
+        self.fc = nn.Sequential(nn.Linear(2048, num_class))
+        self.id_fc = nn.Sequential(nn.Linear(2048, id_class))
 
     def forward(self, x):
         batch_size,C,H,W = x.shape
@@ -93,21 +72,10 @@ class Net(nn.Module):
 
         fea = F.adaptive_avg_pool2d(x, output_size=1).view(batch_size,-1)
         fea = F.dropout(fea, p=0.50, training=self.training)
+        logit = self.fc(fea)
+        logit_id = self.id_fc(fea)
 
-        real_embedding = self.real_embedding(fea)
-        fake_embedding = self.fake_embedding(fea)
-
-        logit_id_real = self.id_real_fc(real_embedding)
-        logit_id_fake = self.id_fake_fc(fake_embedding)
-
-        real_1 = self.final_fc_real(real_embedding)
-        fake_1 = self.final_fc_fake(fake_embedding)
-        logit = torch.cat([real_1,fake_1],dim=1)
-
-        # fc_embedding = torch.cat([real_embedding,fake_embedding], 1)
-        # logit = self.final_fc(fc_embedding)
-
-        return logit, logit_id_real, logit_id_fake
+        return logit, logit_id, fea
 
     def forward_res3(self, x):
         batch_size,C,H,W = x.shape

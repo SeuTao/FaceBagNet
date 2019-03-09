@@ -9,29 +9,7 @@ import torch.nn.functional as F
 import numpy as np
 
 BatchNorm2d = nn.BatchNorm2d
-
 from model.model_resnet18 import Net
-
-# class SEModule(nn.Module):
-#
-#     def __init__(self, channels, reduction=16):
-#         super(SEModule, self).__init__()
-#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
-#         self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1,
-#                              padding=0)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1,
-#                              padding=0)
-#         self.sigmoid = nn.Sigmoid()
-#
-#     def forward(self, x):
-#         module_input = x
-#         x = self.avg_pool(x)
-#         x = self.fc1(x)
-#         x = self.relu(x)
-#         x = self.fc2(x)
-#         x = self.sigmoid(x)
-#         return module_input * x
 
 class SCSEBlock(nn.Module):
     def __init__(self, channel, reduction=16):
@@ -45,7 +23,7 @@ class SCSEBlock(nn.Module):
 
         self.spatial_se = nn.Sequential(nn.Conv2d(channel, 1, kernel_size=1,
                                                   stride=1, padding=0, bias=False),
-                                        nn.Sigmoid())
+                                                  nn.Sigmoid())
 
     def forward(self, x):
         bahs, chs, _, _ = x.size()
@@ -58,8 +36,6 @@ class SCSEBlock(nn.Module):
         spa_se = self.spatial_se(x)
         spa_se = torch.mul(x, spa_se)
         return torch.add(chn_se, 1, spa_se)
-
-
 
 
 ###########################################################################################3

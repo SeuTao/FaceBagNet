@@ -1,4 +1,3 @@
-
 from utils import *
 import random
 import os
@@ -12,47 +11,7 @@ TRAIN_DF  = []
 TEST_DF   = []
 
 DATA_ROOT = r'/data1/shentao/DATA/CVPR19_FaceAntiSpoofing'
-
-def get_label_dict(csv):
-    def get_label_dict(train_df):
-        sample_dict = {}
-        for i in range(28):
-            sample_dict[i] = []
-
-        label_dict = {}
-        for name, lbl in zip(train_df['Id'], train_df['Target'].str.split(' ')):
-            y = np.zeros(28)
-            for key in lbl:
-                y[int(key)] = 1
-                sample_dict[int(key)].append(name)
-            label_dict[name] = y
-        return label_dict, sample_dict
-
-    train_df = pd.read_csv(csv)
-    label_dict, sample_dict = get_label_dict(train_df)
-    return label_dict, sample_dict
-
-def get_sample_dict(label_dict, external_label_dict, image_list):
-    sample_dict = {}
-    for i in range(28):
-        sample_dict[i] = []
-
-    for name in image_list:
-        if name in label_dict:
-            y = label_dict[name]
-        else:
-            y = external_label_dict[name]
-
-        for i in range(28):
-            if y[i] == 1:
-                sample_dict[i].append(name)
-
-    c = 0
-    for item in sample_dict:
-        c += len(sample_dict[item])
-
-    return sample_dict, c
-
+RESIZE_SIZE = 112
 
 class FDDataset(Dataset):
 
@@ -61,7 +20,7 @@ class FDDataset(Dataset):
 
         print('fold: '+str(fold_index))
         print(modality)
-        # print()
+
         self.mode       = mode
         self.modality = modality
 
@@ -86,24 +45,28 @@ class FDDataset(Dataset):
             self.test_list = load_test_list()
             self.num_data = len(self.test_list)
             print('set dataset mode: test')
-        else:
+
+        elif self.mode == 'val':
+            self.val_list = load_val_list()
+            self.num_data = len(self.val_list)
+            print('set dataset mode: test')
+
+        elif self.mode == 'train':
+
             if self.fold_index == -1:
                 self.train_list, self.val_list = load_fold_list(0,all=True)
             else:
                 self.train_list, self.val_list = load_fold_list(self.fold_index)
 
-            if self.mode == 'train':
-                random.shuffle(self.train_list)
-                self.num_data = len(self.train_list)
+            random.shuffle(self.train_list)
+            self.num_data = len(self.train_list)
 
-                if self.balance:
-                    self.train_list = transform_balance(self.train_list)
+            if self.balance:
+                self.train_list = transform_balance(self.train_list)
+            print('set dataset mode: train')
 
-                print('set dataset mode: train')
-
-            if self.mode == 'val':
-                self.num_data = len(self.val_list)
-                print('set dataset mode: val')
+            self.num_data = len(self.val_list)
+            print('set dataset mode: val')
 
         print(self.num_data)
 
@@ -120,14 +83,15 @@ class FDDataset(Dataset):
                 else:
                     tmp_list = self.train_list[1]
                 pos = random.randint(0,len(tmp_list)-1)
-                color, depth, ir, label, id_label = tmp_list[pos]
+                color, depth, ir, label = tmp_list[pos]
             else:
-                color,depth,ir,label, id_label = self.train_list[index]
+                color,depth,ir,label = self.train_list[index]
 
         elif self.mode == 'val':
-            color,depth,ir,label, id_label = self.val_list[index]
+            color,depth,ir,label = self.val_list[index]
+
         elif self.mode == 'test':
-            color, depth, ir,label = self.test_list[index]
+            color, depth, ir = self.test_list[index]
             test_id = color + ' ' + depth + ' ' + ir
 
         if self.modality=='color':
@@ -138,26 +102,47 @@ class FDDataset(Dataset):
             img_path = os.path.join(DATA_ROOT, ir)
 
         image = cv2.imread(img_path,1)
-        image = cv2.resize(image,(112,112))
+        image = cv2.resize(image,(RESIZE_SIZE,RESIZE_SIZE))
 
         if self.mode == 'train':
-            image = self.augment(image)
-        else:
-            image = self.augment(image, is_infer = True, augment = self.augmentor)
+            image = self.augment(image, target_shape=(self.image_size, self.image_size, 3))
 
-        image = cv2.resize(image,(self.image_size,self.image_size))
+            image = cv2.resize(image, (self.image_size, self.image_size))
+            image = np.transpose(image, (2, 0, 1))
+            image = image.astype(np.float32)
+            image = image.reshape([self.channels, self.image_size, self.image_size])
+            image = image / 255.0
+            label = int(label)
 
-        image = np.transpose(image, (2, 0, 1))
-        image = image.astype(np.float32)
-        image = image.reshape([self.channels, self.image_size, self.image_size])
-        image = image / 255.0
+            return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1]))
 
-        label = int(label)
+        elif self.mode == 'val':
+            image = self.augment(image, target_shape=(self.image_size, self.image_size, 3), is_infer = True)
 
-        if self.mode == 'test':
-            return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1])), test_id
-        else:
-            return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1])),torch.LongTensor(np.asarray(id_label).reshape([-1]))
+            n = len(image)
+
+            image = np.concatenate(image,axis=0)
+
+            image = np.transpose(image, (0, 3, 1, 2))
+            image = image.astype(np.float32)
+            image = image.reshape([n, self.channels, self.image_size, self.image_size])
+            image = image / 255.0
+            label = int(label)
+
+            return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1]))
+
+        elif self.mode == 'test':
+            image = self.augment(image, target_shape=(self.image_size, self.image_size, 3), is_infer = True)
+            n = len(image)
+            image = np.concatenate(image,axis=0)
+            image = np.transpose(image, (0, 3, 1, 2))
+            image = image.astype(np.float32)
+            image = image.reshape([n, self.channels, self.image_size, self.image_size])
+            image = image / 255.0
+
+            return torch.FloatTensor(image), test_id
+
+
 
     def __len__(self):
         return self.num_data
@@ -165,7 +150,9 @@ class FDDataset(Dataset):
 
 # check #################################################################
 def run_check_train_data():
-    dataset = FDDataset(mode = 'train', fold_index=0)
+    from augmentation import color_augumentor
+    augment = color_augumentor
+    dataset = FDDataset(mode = 'val', fold_index=-1, image_size=32,  augment=augment)
     print(dataset)
 
     num = len(dataset)
@@ -174,7 +161,7 @@ def run_check_train_data():
         image, label = dataset[m]
         print(image.shape)
         print(label.shape)
-        break
+        # break
 
 # main #################################################################
 if __name__ == '__main__':

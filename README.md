@@ -13,8 +13,29 @@ This is the source code for my solution to the [ChaLearn Face Anti-spoofing Atta
 - torch==0.4.1
 - torchvision==0.2.1
 
+#### Data Setup
+set the data_root
+
+#### Train single-modal Model
+train model_A with color imgs， patch size 48：
+```
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --model=model_A --image_mode=color --image_size=48
+```
+infer
+```
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=color --image_size=48
+```
 
 
+#### Train multi-modal fusion model
+train model A fusion model with multi-modal imgs， patch size 48：
+```
+CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --model=model_A --image_size=48
+```
+infer
+```
+CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model=model_A --image_size=48
+```
 
 
 

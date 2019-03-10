@@ -70,5 +70,5 @@ def sub_second():
     print('test_second.txt done!')
 
 if __name__ == '__main__':
-    sub_first()
-    sub_second()
+    sub_first()  #TPR@FPR=10e-4 0.9971
+    sub_second() #TPR@FPR=10e-4 0.9991

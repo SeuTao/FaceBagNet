@@ -1,5 +1,5 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '1' #'3,2,1,0'
+# os.environ['CUDA_VISIBLE_DEVICES'] =  '3' #'3,2,1,0'
 import sys
 sys.path.append("..")
 import argparse
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--model', type=str, default='model_A')
     parser.add_argument('--image_mode', type=str, default='color')
-    parser.add_argument('--image_size', type=int, default=32)
+    parser.add_argument('--image_size', type=int, default=48)
 
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--cycle_num', type=int, default=10)

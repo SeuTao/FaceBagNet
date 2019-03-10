@@ -13,9 +13,6 @@ This is the source code for my solution to the [ChaLearn Face Anti-spoofing Atta
 - torch==0.4.1
 - torchvision==0.2.1
 
-#### Data Setup
-set the data_root
-
 #### Train single-modal Model
 train model_A with color imgs， patch size 48：
 ```

@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 BatchNorm2d = nn.BatchNorm2d
-from model.model_A import Net
-from model.backbone.senet import SEModule
+from model.FaceBagNet_model_A import Net
+from model.backbone.FaceBagNet import SEModule
 
 ###########################################################################################3
 class FusionNet(nn.Module):

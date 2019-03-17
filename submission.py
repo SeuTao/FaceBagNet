@@ -36,13 +36,13 @@ def ensemble_test_dir(sub_dir_list, save_name):
 def sub_first():
     dir = r'./models/'
 
-    dir_list = [dir + r'baseline_fusion_32/checkpoint/global_test',
-                dir + r'baseline_fusion_48/checkpoint/global_test',
-                dir + r'baseline_fusion_64/checkpoint/global_test',
+    dir_list = [dir + r'baseline_fusion_32/checkpoint/global_test_36_TTA',
+                dir + r'baseline_fusion_48/checkpoint/global_test_36_TTA',
+                dir + r'baseline_fusion_64/checkpoint/global_test_36_TTA',
 
-                dir + r'model_A_color_48/checkpoint/global_test',
-                dir + r'model_A_depth_48/checkpoint/global_test',
-                dir + r'model_A_ir_48/checkpoint/global_test']
+                dir + r'model_A_color_48/checkpoint/global_test_36_TTA',
+                dir + r'model_A_depth_48/checkpoint/global_test_36_TTA',
+                dir + r'model_A_ir_48/checkpoint/global_test_36_TTA']
 
     ensemble_test_dir(dir_list, 'test_first.txt')
     print('test_first.txt done!')

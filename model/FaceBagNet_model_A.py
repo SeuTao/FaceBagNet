@@ -27,7 +27,7 @@ class Net(nn.Module):
         if self.is_first_bn:
             self.first_bn = nn.BatchNorm2d(3)
 
-        self.encoder  = FaceBagNet_model_A()
+        self.encoder  = FaceBagNet_model_A(num_classes=1000)
         self.conv1 = self.encoder.layer0
         self.conv2 = self.encoder.layer1
         self.conv3 = self.encoder.layer2

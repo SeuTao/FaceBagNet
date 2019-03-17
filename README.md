@@ -37,6 +37,34 @@ CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model
 
 
 
+#### For the origanizers to reproduce final two submissions
+unzip the models.zip in the root folder and infer all the trained models 
+
+infer
+```
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=color --image_size=32
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=depth --image_size=32
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=ir    --image_size=32
+
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=color --image_size=48
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=depth --image_size=48
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=ir    --image_size=48
+
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=color --image_size=64
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=depth --image_size=64
+CUDA_VISIBLE_DEVICES=0 python train_CyclicLR.py --mode=infer_test --model=model_A --image_mode=ir    --image_size=64
+
+CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model=baseline --image_size=32
+CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model=baseline --image_size=48
+CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model=baseline --image_size=64
+
+```
+
+run ensemble script submission.py
+```
+python submission.py
+```
+
 
 
 

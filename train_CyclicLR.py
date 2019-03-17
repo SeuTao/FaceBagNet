@@ -1,5 +1,5 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '3' #'3,2,1,0'
+# os.environ['CUDA_VISIBLE_DEVICES'] =  '4,5,6,7' #'3,2,1,0'
 import sys
 sys.path.append("..")
 import argparse
@@ -255,18 +255,15 @@ if __name__ == '__main__':
     parser.add_argument('--train_fold_index', type=int, default = -1)
 
     parser.add_argument('--model', type=str, default='model_A')
-    parser.add_argument('--image_mode', type=str, default='color')
-    parser.add_argument('--image_size', type=int, default=48)
+    parser.add_argument('--image_mode', type=str, default='ir')
+    parser.add_argument('--image_size', type=int, default=64)
 
-    parser.add_argument('--batch_size', type=int, default=256)
+    parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--cycle_num', type=int, default=10)
     parser.add_argument('--cycle_inter', type=int, default=50)
 
     parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)
-
-    # parser.add_argument('--mode', type=str, default='infer_test', choices=['train','test','valid_10crop'])
-    # parser.add_argument('--pretrained_model', type=str, default=None)
 
     config = parser.parse_args()
     print(config)

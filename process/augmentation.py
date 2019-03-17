@@ -18,6 +18,42 @@ def random_cropping(image, target_shape=(32, 32, 3), is_random = True):
     zeros = image[start_y:start_y+target_h,start_x:start_x+target_w,:]
     return zeros
 
+
+def TTA_5_cropps(image, target_shape=(32, 32, 3)):
+    image = cv2.resize(image, (RESIZE_SIZE, RESIZE_SIZE))
+
+    width, height, d = image.shape
+    target_w, target_h, d = target_shape
+
+    start_x = ( width - target_w) // 2
+    start_y = ( height - target_h) // 2
+
+    starts = [[start_x, start_y],
+              [start_x - target_w, start_y],
+              [start_x, start_y - target_w],
+              [start_x + target_w, start_y],
+              [start_x, start_y + target_w],]
+
+    images = []
+    for start_index in starts:
+        image_ = image.copy()
+        x, y = start_index
+
+        if x < 0:
+            x = 0
+        if y < 0:
+            y = 0
+        if x + target_w >= RESIZE_SIZE:
+            x = RESIZE_SIZE - target_w-1
+        if y + target_h >= RESIZE_SIZE:
+            y = RESIZE_SIZE - target_h-1
+
+        zeros = image_[x:x + target_w, y: y+target_h, :]
+        image_ = zeros.copy()
+        images.append(image_.reshape([1,target_shape[0],target_shape[1],target_shape[2]]))
+
+    return images
+
 def TTA_18_cropps(image, target_shape=(32, 32, 3)):
     image = cv2.resize(image, (RESIZE_SIZE, RESIZE_SIZE))
 

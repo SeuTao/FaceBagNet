@@ -60,12 +60,11 @@ CUDA_VISIBLE_DEVICES=0 python train_Fusion_CyclicLR.py --mode=infer_test --model
 
 ```
 
-run ensemble script submission.py
+run ensemble script submission.py to generate the final two submissions in phase2:
+(test_first.txt and test_second.txt)
 ```
 python submission.py
 ```
-
-
 
 
 

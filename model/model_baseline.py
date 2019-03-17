@@ -5,8 +5,6 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 
-from modified_resnet import Modified_resnet18
-
 BatchNorm2d = nn.BatchNorm2d
 
 ###########################################################################################3

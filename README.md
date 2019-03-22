@@ -4,7 +4,8 @@ This is the source code for my solution to the [ChaLearn Face Anti-spoofing Atta
 ## Recent Update
 
 **`2019.3.22`**: will update soon.
-**`2019.3.10`**: code upload for submission.
+
+**`2019.3.10`**: code upload for the origanizers to reproduce.
 
 #### Dependencies
 - imgaug==0.2.6

@@ -67,7 +67,19 @@ run ensemble script submission.py to generate the final two submissions in phase
 python submission.py
 ```
 
+## Citation
+If you find this work or code is helpful in your research, please cite:
+```
+@InProceedings{Shen_2019_CVPR_Workshops,
+author = {Shen, Tao and Huang, Yuyu and Tong, Zhijun},
+title = {FaceBagNet: Bag-Of-Local-Features Model for Multi-Modal Face Anti-Spoofing},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR) Workshops},
+month = {June},
+year = {2019}
+}
 
+## Contact
+If you have any questions, feel free to E-mail me via: `taoshen.seu@gmail.com`
 
 
 

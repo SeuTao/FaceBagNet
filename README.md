@@ -15,7 +15,7 @@ This is the source code for my solution to the [ChaLearn Face Anti-spoofing Atta
 - torch==0.4.1
 - torchvision==0.2.1
 
-###$ Pretrained models
+#### Pretrained models
 
 download [\[models\]](https://drive.google.com/open?id=1YHqPbGOiXlmgHLhc5a9lJrxRS1GIheKJ)
 

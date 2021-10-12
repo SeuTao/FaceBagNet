@@ -2,8 +2,7 @@ import os
 import random
 from utils import *
 
-DATA_ROOT = r'/data1/shentao/DATA/CVPR19_FaceAntiSpoofing'
-
+DATA_ROOT = r'./CASIA-SURF/phase1'
 TRN_IMGS_DIR = DATA_ROOT + '/Training/'
 TST_IMGS_DIR = DATA_ROOT + '/Val/'
 RESIZE_SIZE = 112

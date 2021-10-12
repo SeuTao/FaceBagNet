@@ -136,7 +136,6 @@ class FDDataset(Dataset):
             label = int(label)
             return torch.FloatTensor(image), torch.LongTensor(np.asarray(label).reshape([-1]))
 
-
         elif self.mode == 'test':
             color = color_augumentor(color, target_shape=(self.image_size, self.image_size, 3), is_infer=True)
             depth = depth_augumentor(depth, target_shape=(self.image_size, self.image_size, 3), is_infer=True)
@@ -160,7 +159,6 @@ class FDDataset(Dataset):
 
     def __len__(self):
         return self.num_data
-
 
 # check #################################################################
 def run_check_train_data():

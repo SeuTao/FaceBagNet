@@ -1,53 +1,30 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '4,5,6,7' #'3,2,1,0'
 import sys
-sys.path.append("..")
 import argparse
-from process.data import *
-from process.augmentation import *
-from metric import *
+from process.data import FDDataset
+from process.augmentation import get_augment
+from metric import metric, do_valid_test
+from model import get_model
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
-
-def get_model(model_name, num_class,is_first_bn):
-    if model_name == 'baseline':
-        from model.model_baseline import Net
-    elif model_name == 'model_A':
-        from model.FaceBagNet_model_A import Net
-    elif model_name == 'model_B':
-        from model.FaceBagNet_model_B import Net
-    elif model_name == 'model_C':
-        from model.FaceBagNet_model_C import Net
-
-    net = Net(num_class=num_class,is_first_bn=is_first_bn)
-    return net
-
-def get_augment(image_mode):
-    if image_mode == 'color':
-        augment = color_augumentor
-    elif image_mode == 'depth':
-        augment = depth_augumentor
-    elif image_mode == 'ir':
-        augment = ir_augumentor
-    return augment
+from utils import *
 
 def run_train(config):
-    out_dir = './models'
-    config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
-    out_dir = os.path.join(out_dir,config.model_name)
+    model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
+    config.save_dir = os.path.join(config.save_dir, model_name)
     initial_checkpoint = config.pretrained_model
     criterion  = softmax_cross_entropy_criterion
 
     ## setup  -----------------------------------------------------------------------------
-    if not os.path.exists(out_dir +'/checkpoint'):
-        os.makedirs(out_dir +'/checkpoint')
-    if not os.path.exists(out_dir +'/backup'):
-        os.makedirs(out_dir +'/backup')
-    if not os.path.exists(out_dir +'/backup'):
-        os.makedirs(out_dir +'/backup')
+    if not os.path.exists(config.save_dir +'/checkpoint'):
+        os.makedirs(config.save_dir +'/checkpoint')
+    if not os.path.exists(config.save_dir +'/backup'):
+        os.makedirs(config.save_dir +'/backup')
+    if not os.path.exists(config.save_dir +'/backup'):
+        os.makedirs(config.save_dir +'/backup')
 
     log = Logger()
-    log.open(os.path.join(out_dir,config.model_name+'.txt'),mode='a')
-    log.write('\tout_dir      = %s\n' % out_dir)
+    log.open(os.path.join(config.save_dir,model_name+'.txt'),mode='a')
+    log.write('\tconfig.save_dir      = %s\n' % config.save_dir)
     log.write('\n')
     log.write('\t<additional comments>\n')
     log.write('\t  ... xxx baseline  ... \n')
@@ -66,6 +43,7 @@ def run_train(config):
 
     valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
                               fold_index=config.train_fold_index,augment=augment)
+
     valid_loader  = DataLoader( valid_dataset,
                                 shuffle=False,
                                 batch_size = config.batch_size // 36,
@@ -82,10 +60,10 @@ def run_train(config):
     net = get_model(model_name=config.model, num_class=2, is_first_bn=True)
     print(net)
     net = torch.nn.DataParallel(net)
-    net =  net.cuda()
+    net = net.cuda()
 
     if initial_checkpoint is not None:
-        initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
+        initial_checkpoint = os.path.join(config.save_dir +'/checkpoint',initial_checkpoint)
         print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
 
@@ -119,8 +97,8 @@ def run_train(config):
                                           T_max=config.cycle_inter,
                                           T_mult=1,
                                           model=net,
-                                          out_dir='../input/',
                                           take_snapshot=False,
+                                          out_dir=None,
                                           eta_min=1e-3)
 
     global_min_acer = 1.0
@@ -145,7 +123,7 @@ def run_train(config):
                 input = input.cuda()
                 truth = truth.cuda()
 
-                logit,_,_ = net.forward(input)
+                logit = net.forward(input)
                 truth = truth.view(logit.shape[0])
 
                 loss  = criterion(logit, truth)
@@ -171,31 +149,31 @@ def run_train(config):
 
                 if valid_loss[1] < min_acer and epoch > 0:
                     min_acer = valid_loss[1]
-                    ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_min_acer_model.pth'
+                    ckpt_name = config.save_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_min_acer_model.pth'
                     torch.save(net.state_dict(), ckpt_name)
                     log.write('save cycle ' + str(cycle_index) + ' min acer model: ' + str(min_acer) + '\n')
 
                 if valid_loss[1] < global_min_acer and epoch > 0:
                     global_min_acer = valid_loss[1]
-                    ckpt_name = out_dir + '/checkpoint/global_min_acer_model.pth'
+                    ckpt_name = config.save_dir + '/checkpoint/global_min_acer_model.pth'
                     torch.save(net.state_dict(), ckpt_name)
                     log.write('save global min acer model: ' + str(min_acer) + '\n')
 
             asterisk = ' '
-            log.write(config.model_name+' Cycle %d: %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f %s  | %0.6f  %0.6f |%s \n' % (
+            log.write(model_name+' Cycle %d: %0.4f %5.1f %6.1f | %0.6f  %0.6f  %0.3f %s  | %0.6f  %0.6f |%s \n' % (
                 cycle_index, lr, iter, epoch,
                 valid_loss[0], valid_loss[1], valid_loss[2], asterisk,
                 batch_loss[0], batch_loss[1],
                 time_to_str((timer() - start), 'min')))
 
-        ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
+        ckpt_name = config.save_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
         torch.save(net.state_dict(), ckpt_name)
         log.write('save cycle ' + str(cycle_index) + ' final model \n')
 
 def run_test(config, dir):
-    out_dir = './models'
-    config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
-    out_dir = os.path.join(out_dir,config.model_name)
+    config.save_dir = './models'
+    model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
+    config.save_dir = os.path.join(config.save_dir, model_name)
     initial_checkpoint = config.pretrained_model
     augment = get_augment(config.image_mode)
 
@@ -205,12 +183,12 @@ def run_test(config, dir):
     net =  net.cuda()
 
     if initial_checkpoint is not None:
-        save_dir = os.path.join(out_dir + '/checkpoint', dir, initial_checkpoint)
-        initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
+        save_dir = os.path.join(config.save_dir + '/checkpoint', dir, initial_checkpoint)
+        initial_checkpoint = os.path.join(config.save_dir +'/checkpoint',initial_checkpoint)
         print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
-        if not os.path.exists(os.path.join(out_dir + '/checkpoint', dir)):
-            os.makedirs(os.path.join(out_dir + '/checkpoint', dir))
+        if not os.path.exists(os.path.join(config.save_dir + '/checkpoint', dir)):
+            os.makedirs(os.path.join(config.save_dir + '/checkpoint', dir))
 
 
     valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
@@ -242,21 +220,24 @@ def run_test(config, dir):
 
 def main(config):
     if config.mode == 'train':
+        config.image_mode = 'ir'
+        run_train(config)
+        config.image_mode = 'depth'
+        run_train(config)
+        config.image_mode = 'color'
         run_train(config)
 
     if config.mode == 'infer_test':
         config.pretrained_model = r'global_min_acer_model.pth'
         run_test(config, dir='global_test_36_TTA')
 
-    return
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_fold_index', type=int, default = -1)
 
-    parser.add_argument('--model', type=str, default='model_A')
-    parser.add_argument('--image_mode', type=str, default='ir')
-    parser.add_argument('--image_size', type=int, default=64)
+    parser.add_argument('--model', type=str, default='FaceBagNet')
+    parser.add_argument('--image_mode', type=str, default = 'ir')
+    parser.add_argument('--image_size', type=int, default = 96)
 
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--cycle_num', type=int, default=10)
@@ -264,6 +245,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)
+    parser.add_argument('--save_dir', type=str, default='./Models')
 
     config = parser.parse_args()
     print(config)

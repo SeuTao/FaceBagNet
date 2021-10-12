@@ -1,7 +1,16 @@
-from imgaug import augmenters as iaa
 import math
 import cv2
-from data_helper import *
+from imgaug import augmenters as iaa
+from .data_helper import *
+
+def get_augment(image_mode):
+    if image_mode == 'color':
+        augment = color_augumentor
+    elif image_mode == 'depth':
+        augment = depth_augumentor
+    elif image_mode == 'ir':
+        augment = ir_augumentor
+    return augment
 
 def random_cropping(image, target_shape=(32, 32, 3), is_random = True):
     image = cv2.resize(image,(RESIZE_SIZE,RESIZE_SIZE))
@@ -17,7 +26,6 @@ def random_cropping(image, target_shape=(32, 32, 3), is_random = True):
 
     zeros = image[start_y:start_y+target_h,start_x:start_x+target_w,:]
     return zeros
-
 
 def TTA_5_cropps(image, target_shape=(32, 32, 3)):
     image = cv2.resize(image, (RESIZE_SIZE, RESIZE_SIZE))
@@ -212,7 +220,7 @@ def color_augumentor(image, target_shape=(32, 32, 3), is_infer=False):
             iaa.Fliplr(0),
         ])
 
-        image =  augment_img.augment_image(image)
+        image = augment_img.augment_image(image)
         image = TTA_36_cropps(image, target_shape)
         return image
 

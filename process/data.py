@@ -1,6 +1,6 @@
-from utils import *
 import cv2
-from data_helper import *
+from .data_helper import *
+from utils import *
 
 class FDDataset(Dataset):
     def __init__(self, mode, modality='color', fold_index=-1, image_size=128, augment = None, augmentor = None, balance = True):
@@ -99,11 +99,8 @@ class FDDataset(Dataset):
 
         elif self.mode == 'val':
             image = self.augment(image, target_shape=(self.image_size, self.image_size, 3), is_infer = True)
-
             n = len(image)
-
             image = np.concatenate(image,axis=0)
-
             image = np.transpose(image, (0, 3, 1, 2))
             image = image.astype(np.float32)
             image = image.reshape([n, self.channels, self.image_size, self.image_size])

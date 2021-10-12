@@ -1,42 +1,29 @@
 import os
-# os.environ['CUDA_VISIBLE_DEVICES'] =  '6'
 import sys
-sys.path.append("..")
 import argparse
 from process.data_fusion import *
 from process.augmentation import *
 from metric import *
 from loss.cyclic_lr import CosineAnnealingLR_with_Restart
 
-def get_model(model_name, num_class):
-    if model_name == 'baseline':
-        from model_fusion.model_baseline_SEFusion import FusionNet
-    elif model_name == 'model_A':
-        from model_fusion.FaceBagNet_model_A_SEFusion import FusionNet
-    elif model_name == 'model_B':
-        from model_fusion.FaceBagNet_model_B_SEFusion import FusionNet
-
-    net = FusionNet(num_class=num_class)
-    return net
-
 def run_train(config):
-    out_dir = './models'
+    config.save_dir = './models'
     config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
-    out_dir = os.path.join(out_dir,config.model_name)
+    config.save_dir = os.path.join(config.save_dir,config.model_name)
     initial_checkpoint = config.pretrained_model
     criterion          = softmax_cross_entropy_criterion
 
     ## setup  -----------------------------------------------------------------------------
-    if not os.path.exists(out_dir +'/checkpoint'):
-        os.makedirs(out_dir +'/checkpoint')
-    if not os.path.exists(out_dir +'/backup'):
-        os.makedirs(out_dir +'/backup')
-    if not os.path.exists(out_dir +'/backup'):
-        os.makedirs(out_dir +'/backup')
+    if not os.path.exists(config.save_dir +'/checkpoint'):
+        os.makedirs(config.save_dir +'/checkpoint')
+    if not os.path.exists(config.save_dir +'/backup'):
+        os.makedirs(config.save_dir +'/backup')
+    if not os.path.exists(config.save_dir +'/backup'):
+        os.makedirs(config.save_dir +'/backup')
 
     log = Logger()
-    log.open(os.path.join(out_dir,config.model_name+'.txt'),mode='a')
-    log.write('\tout_dir      = %s\n' % out_dir)
+    log.open(os.path.join(config.save_dir,config.model_name+'.txt'),mode='a')
+    log.write('\tconfig.save_dir      = %s\n' % config.save_dir)
     log.write('\n')
     log.write('\t<additional comments>\n')
     log.write('\t  ... xxx baseline  ... \n')
@@ -73,7 +60,7 @@ def run_train(config):
     net =  net.cuda()
 
     if initial_checkpoint is not None:
-        initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
+        initial_checkpoint = os.path.join(config.save_dir +'/checkpoint',initial_checkpoint)
         print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
 
@@ -106,8 +93,8 @@ def run_train(config):
                                           T_max=config.cycle_inter,
                                           T_mult=1,
                                           model=net,
-                                          out_dir='../input/',
                                           take_snapshot=False,
+                                          out_dir=None,
                                           eta_min=1e-3)
 
     global_min_acer = 1.0
@@ -158,13 +145,13 @@ def run_train(config):
 
                 if valid_loss[1] < min_acer and epoch > 0:
                     min_acer = valid_loss[1]
-                    ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_min_acer_model.pth'
+                    ckpt_name = config.save_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_min_acer_model.pth'
                     torch.save(net.state_dict(), ckpt_name)
                     log.write('save cycle ' + str(cycle_index) + ' min acer model: ' + str(min_acer) + '\n')
 
                 if valid_loss[1] < global_min_acer and epoch > 0:
                     global_min_acer = valid_loss[1]
-                    ckpt_name = out_dir + '/checkpoint/global_min_acer_model.pth'
+                    ckpt_name = config.save_dir + '/checkpoint/global_min_acer_model.pth'
                     torch.save(net.state_dict(), ckpt_name)
                     log.write('save global min acer model: ' + str(min_acer) + '\n')
 
@@ -175,14 +162,14 @@ def run_train(config):
                 batch_loss[0], batch_loss[1],
                 time_to_str((timer() - start), 'min')))
 
-        ckpt_name = out_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
+        ckpt_name = config.save_dir + '/checkpoint/Cycle_' + str(cycle_index) + '_final_model.pth'
         torch.save(net.state_dict(), ckpt_name)
         log.write('save cycle ' + str(cycle_index) + ' final model \n')
 
 def run_test(config, dir):
     config.model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
-    out_dir = './models'
-    out_dir = os.path.join(out_dir,config.model_name)
+    config.save_dir = './models'
+    config.save_dir = os.path.join(config.save_dir,config.model_name)
     initial_checkpoint = config.pretrained_model
 
     ## net ---------------------------------------
@@ -191,12 +178,12 @@ def run_test(config, dir):
     net =  net.cuda()
 
     if initial_checkpoint is not None:
-        save_dir = os.path.join(out_dir + '/checkpoint', dir, initial_checkpoint)
-        initial_checkpoint = os.path.join(out_dir +'/checkpoint',initial_checkpoint)
+        save_dir = os.path.join(config.save_dir + '/checkpoint', dir, initial_checkpoint)
+        initial_checkpoint = os.path.join(config.save_dir +'/checkpoint',initial_checkpoint)
         print('\tinitial_checkpoint = %s\n' % initial_checkpoint)
         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
-        if not os.path.exists(os.path.join(out_dir + '/checkpoint', dir)):
-            os.makedirs(os.path.join(out_dir + '/checkpoint', dir))
+        if not os.path.exists(os.path.join(config.save_dir + '/checkpoint', dir)):
+            os.makedirs(os.path.join(config.save_dir + '/checkpoint', dir))
 
     valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
                               fold_index=config.train_fold_index)
@@ -248,6 +235,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)
+    parser.add_argument('--save_dir', type=str, default='./Models')
 
     config = parser.parse_args()
     print(config)

@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from scipy import interpolate
-
 from tqdm import tqdm
 
 def calculate_accuracy(threshold, dist, actual_issame):
@@ -99,7 +98,7 @@ def do_valid( net, test_loader, criterion ):
         truth = truth.cuda()
 
         with torch.no_grad():
-            logit,_,_   = net(input)
+            logit = net(input)
             logit = logit.view(b,n,2)
             logit = torch.mean(logit, dim = 1, keepdim = False)
 
@@ -140,9 +139,7 @@ def do_valid_test( net, test_loader, criterion ):
     probs = []
     labels = []
 
-
     for i, (input, truth) in enumerate(tqdm(test_loader)):
-    # for input, truth in test_loader:
         b,n,c,w,h = input.size()
         input = input.view(b*n,c,w,h)
 
@@ -150,7 +147,7 @@ def do_valid_test( net, test_loader, criterion ):
         truth = truth.cuda()
 
         with torch.no_grad():
-            logit,_,_   = net(input)
+            logit = net(input)
             logit = logit.view(b,n,2)
             logit = torch.mean(logit, dim = 1, keepdim = False)
 
@@ -163,9 +160,6 @@ def do_valid_test( net, test_loader, criterion ):
         corrects.append(np.asarray(correct).reshape([1]))
         probs.append(prob.data.cpu().numpy())
         labels.append(truth.data.cpu().numpy())
-
-    # assert(valid_num == len(test_loader.sampler))
-    #----------------------------------------------
 
     correct = np.concatenate(corrects)
     loss    = np.concatenate(losses)

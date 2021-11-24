@@ -9,8 +9,11 @@ from loss.cyclic_lr import CosineAnnealingLR_with_Restart
 from utils import *
 
 def run_train(config):
-    model_name = config.model + '_' + config.image_mode + '_' + str(config.image_size)
+    model_name = f'{config.model}_{config.image_mode}_{config.image_size}'
+    if 'FaceBagNet' not in config.model:
+        model_name += f'_{config.patch_size}'
     config.save_dir = os.path.join(config.save_dir, model_name)
+
     initial_checkpoint = config.pretrained_model
     criterion  = softmax_cross_entropy_criterion
 
@@ -39,7 +42,7 @@ def run_train(config):
                                 shuffle=True,
                                 batch_size  = config.batch_size,
                                 drop_last   = True,
-                                num_workers = 4)
+                                num_workers = config.num_workers)
 
     valid_dataset = FDDataset(mode = 'val', modality=config.image_mode,image_size=config.image_size,
                               fold_index=config.train_fold_index,augment=augment)
@@ -48,7 +51,7 @@ def run_train(config):
                                 shuffle=False,
                                 batch_size = config.batch_size // 36,
                                 drop_last  = False,
-                                num_workers = 4)
+                                num_workers = config.num_workers)
 
     assert(len(train_dataset)>=config.batch_size)
     log.write('batch_size = %d\n'%(config.batch_size))
@@ -57,7 +60,7 @@ def run_train(config):
     log.write('\n')
     log.write('** net setting **\n')
 
-    net = get_model(model_name=config.model, num_class=2, is_first_bn=True)
+    net = get_model(model_name=config.model, image_size=config.image_size, patch_size=config.patch_size)
     print(net)
     net = torch.nn.DataParallel(net)
     net = net.cuda()
@@ -68,7 +71,6 @@ def run_train(config):
         net.load_state_dict(torch.load(initial_checkpoint, map_location=lambda storage, loc: storage))
 
     log.write('%s\n'%(type(net)))
-    log.write('criterion=%s\n'%criterion)
     log.write('\n')
 
     iter_smooth = 20
@@ -197,7 +199,7 @@ def run_test(config, dir):
                                 shuffle=False,
                                 batch_size  = config.batch_size,
                                 drop_last   = False,
-                                num_workers=8)
+                                num_workers = config.num_workers)
 
     test_dataset = FDDataset(mode = 'test', modality=config.image_mode,image_size=config.image_size,
                               fold_index=config.train_fold_index,augment=augment)
@@ -205,7 +207,7 @@ def run_test(config, dir):
                                 shuffle=False,
                                 batch_size  = config.batch_size,
                                 drop_last   = False,
-                                num_workers=8)
+                                num_workers = config.num_workers)
 
     criterion = softmax_cross_entropy_criterion
     net.eval()
@@ -220,11 +222,6 @@ def run_test(config, dir):
 
 def main(config):
     if config.mode == 'train':
-        config.image_mode = 'ir'
-        run_train(config)
-        config.image_mode = 'depth'
-        run_train(config)
-        config.image_mode = 'color'
         run_train(config)
 
     if config.mode == 'infer_test':
@@ -238,10 +235,12 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='FaceBagNet')
     parser.add_argument('--image_mode', type=str, default = 'ir')
     parser.add_argument('--image_size', type=int, default = 96)
+    parser.add_argument('--patch_size', type=int, default = 16)
 
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--cycle_num', type=int, default=10)
     parser.add_argument('--cycle_inter', type=int, default=50)
+    parser.add_argument('--num_workers', type=int, default=32)
 
     parser.add_argument('--mode', type=str, default='train', choices=['train','infer_test'])
     parser.add_argument('--pretrained_model', type=str, default=None)

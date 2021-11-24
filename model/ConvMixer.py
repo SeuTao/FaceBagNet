@@ -10,7 +10,7 @@ class Residual(nn.Module):
 
 def ConvMixer(dim, depth, kernel_size=9, patch_size=7, n_classes=1000):
     return nn.Sequential(
-        nn.Conv2d(3, dim, kernel_size=patch_size, stride=patch_size),
+        nn.Conv2d(3, dim, kernel_size = patch_size, stride = patch_size),
         nn.GELU(),
         nn.BatchNorm2d(dim),
         *[nn.Sequential(

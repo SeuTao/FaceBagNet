@@ -2,7 +2,7 @@ import os
 import random
 from utils import *
 
-DATA_ROOT = r'./CASIA-SURF/phase1'
+DATA_ROOT = r'/mnt/superCeph2/private/user/shentao/DATA/FAS/CASIA-SURF/phase1'
 TRN_IMGS_DIR = DATA_ROOT + '/Training/'
 TST_IMGS_DIR = DATA_ROOT + '/Val/'
 RESIZE_SIZE = 112
@@ -39,7 +39,6 @@ def load_test_list():
     return list
 
 def transform_balance(train_list):
-    print('balance!!!!!!!!')
     pos_list = []
     neg_list = []
     for tmp in train_list:

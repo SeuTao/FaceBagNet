@@ -2,7 +2,7 @@ import os
 import random
 from utils import *
 
-DATA_ROOT = r'/mnt/superCeph2/private/user/shentao/DATA/FAS/CASIA-SURF/phase1'
+DATA_ROOT = r'{path-to-dataset}/CASIA-SURF/phase1'
 TRN_IMGS_DIR = DATA_ROOT + '/Training/'
 TST_IMGS_DIR = DATA_ROOT + '/Val/'
 RESIZE_SIZE = 112

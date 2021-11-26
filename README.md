@@ -1,4 +1,5 @@
 # Patch-based Methods for Face Anti-spoofing (FAS) & Code for CVPR2019 FAS Attack Detection Challenge
+
 This is the source code for 2nd palce solution to the [ChaLearn Face Anti-spoofing Attack Detection Challenge](https://sites.google.com/qq.com/face-anti-spoofing/winners-results/challengecvpr2019) hosted by ChaLearn. 
 ![image](docs/v1_fusion.png)
 
@@ -17,7 +18,23 @@ This is the source code for 2nd palce solution to the [ChaLearn Face Anti-spoofi
 
 #### Pretrained models
 
-download [\[models\]](https://drive.google.com/open?id=1YHqPbGOiXlmgHLhc5a9lJrxRS1GIheKJ)
+download [\[models.2021\]](https://drive.google.com/file/d/1ygfWYrNacHZFKisIvuqzNcO0Nq3zzf-4/view?usp=sharing)
+
+#### CASIA-SURF validation score (ACER)
+
+
+| Single-modal Model                 | Color  | Depth  | ir     |
+| --------------------- | ------ | ------ | ------ |
+| FaceBagNet            | 0.0672 | 0.0036 | 0.1003 |
+| ConvMixer             | 0.0311 | 0.0025 | 0.1073 |
+| MLPMixer              | 0.0584 | 0.0010 | 0.2382 |
+| VisionPermutator(ViP) | 0.0570 | 0.0304 | 0.2571 |
+| VisonTransformer(ViT) | 0.0683 | 0.0036 | 0.2799 |
+
+| Multi-modal Model         | patch size 32 | patch size 48 | patch size 64 |
+| ----------------- | ------------- | ------------- | ------------- |
+| FaceBagNetFusion  | 0.0009        | 0.0006        | 0.0007        |
+| ViTFusion         | 0.0169        | 0.0778        | 0.0375        |
 
 #### Train single-modal Model
 train FaceBagNet with color imgs， patch size 48：
@@ -40,6 +57,8 @@ CUDA_VISIBLE_DEVICES=0 python train_fusion.py --mode=infer_test --model=FaceBagN
 ```
 
 ## ViT for Multi-modal Face Anti-spoofing 
+
+<img src="./docs/vit.jpg" width="500px"></img>
 
 ```
 CUDA_VISIBLE_DEVICES=0 python train_fusion.py --model=ViTFusion --image_size=96 --image_patch 16

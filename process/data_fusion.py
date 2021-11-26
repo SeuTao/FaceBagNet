@@ -161,7 +161,7 @@ class FDDataset(Dataset):
 
 # check #################################################################
 def run_check_train_data():
-    dataset = FDDataset(mode = 'train', patch_size=16, mask_ratio=0.75)
+    dataset = FDDataset(mode = 'train')
     print(dataset)
 
     num = len(dataset)

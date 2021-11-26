@@ -1,5 +1,5 @@
-# Code for ChaLearn Face Anti-spoofing Attack Detection Challenge @ CVPR2019
-This is the source code for my solution to the [ChaLearn Face Anti-spoofing Attack Detection Challenge](https://competitions.codalab.org/competitions/20853#learn_the_details) hosted by ChaLearn. 
+# Patch-based Methods for Face Anti-spoofing (FAS) & Code for CVPR2019 FAS Attack Detection Challenge
+This is the source code for 2nd palce solution to the [ChaLearn Face Anti-spoofing Attack Detection Challenge](https://sites.google.com/qq.com/face-anti-spoofing/winners-results/challengecvpr2019) hosted by ChaLearn. 
 ![image](docs/v1_fusion.png)
 
 ## Recent Update
@@ -8,7 +8,7 @@ This is the source code for my solution to the [ChaLearn Face Anti-spoofing Atta
 
 **`2021.10.12`**: Add VisionPermutator, MLPMixer and ConvMixer for patch-based FAS
 
-**`2019.3.10`**: code upload for the origanizers to reproduce.
+**`2019.3.10`**: Code upload for the origanizers to reproduce. 
 
 #### Dependencies
 - imgaug==0.4.0
@@ -32,11 +32,19 @@ CUDA_VISIBLE_DEVICES=0 python train.py --mode=infer_test --model=FaceBagNet --im
 #### Train multi-modal fusion model
 train FaceBagNet fusion model with multi-modal imgs， patch size 48：
 ```
-CUDA_VISIBLE_DEVICES=0 python train_fusion.py --model=FaceBagNet --image_size=48
+CUDA_VISIBLE_DEVICES=0 python train_fusion.py --model=FaceBagNetFusion --image_size=48
 ```
 infer
 ```
 CUDA_VISIBLE_DEVICES=0 python train_fusion.py --mode=infer_test --model=FaceBagNet --image_size=48
+```
+
+##ViT for Multi-modal Face Anti-spoofing 
+
+![image](docs/vit.jpg)
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_fusion.py --model=ViTFusion --image_size=96 --image_patch 16
 ```
 
 ## Citation

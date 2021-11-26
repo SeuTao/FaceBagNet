@@ -39,9 +39,7 @@ infer
 CUDA_VISIBLE_DEVICES=0 python train_fusion.py --mode=infer_test --model=FaceBagNet --image_size=48
 ```
 
-##ViT for Multi-modal Face Anti-spoofing 
-
-![image](docs/vit.jpg)
+## ViT for Multi-modal Face Anti-spoofing 
 
 ```
 CUDA_VISIBLE_DEVICES=0 python train_fusion.py --model=ViTFusion --image_size=96 --image_patch 16
